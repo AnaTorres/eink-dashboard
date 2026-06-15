@@ -26,6 +26,7 @@ def pthread_irq() :
             GT_Dev.Touch = 1
         else :
             GT_Dev.Touch = 0
+        time.sleep(0.01)    
     print("thread:exit")
 
 def Show_Photo_Small(image, small):
