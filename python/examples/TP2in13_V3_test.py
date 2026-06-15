@@ -30,7 +30,7 @@ def pthread_irq() :
     print("thread:exit")
 
 def Show_Photo_Small(image, small):
-    for t in range(1, 5):
+    for t in range(1, 2):
         if(small*2+t > 6):
             newimage = Image.open(os.path.join(picdir, PhotoPath_S[0]))
             image.paste(newimage, ((t-1)//2*45+2, (t%2)*124+2))
