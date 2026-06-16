@@ -30,7 +30,7 @@ def pthread_irq() :
     print("thread:exit")
 
 def Show_Photo_Small(image, small):
-    for t in range(1, 2):
+    for t in range(1, 5):
         if(small*2+t > 6):
             newimage = Image.open(os.path.join(picdir, PhotoPath_S[0]))
             image.paste(newimage, ((t-1)//2*45+2, (t%2)*124+2))
@@ -79,7 +79,7 @@ try:
     
     i = j = k = ReFlag = SelfFlag = Page = Photo_L = Photo_S = 0
     PhotoPath_S = [ "Photo_1_0.bmp",
-                    "Photo_1_1.bmp", "Photo_1_2.bmp", "Photo_1_3.bmp", "Photo_1_4.bmp",
+                    "ejercicio.bmp", "Photo_1_2.bmp", "Photo_1_3.bmp", "Photo_1_4.bmp",
                     "Photo_1_5.bmp", "Photo_1_6.bmp",
                     ]
     PhotoPath_L = [ "Photo_2_0.bmp",
