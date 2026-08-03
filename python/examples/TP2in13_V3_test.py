@@ -78,13 +78,11 @@ PhotoPath_L = [
 # ---------------------------------------------------------
 # Páginas del programa
 #
-# Page 0 = menú principal
-# Page 1 = menú de palabras
-# Page 2 = imagen grande
+# Page 0 = menú de palabras
+# Page 1 = imagen grande
 # ---------------------------------------------------------
 
 PagePath = [
-    "Menu.bmp",
     "Photo_1.bmp",
     "Photo_2.bmp",
 ]
@@ -407,43 +405,43 @@ try:
             touch_y
         )
 
+        # # =================================================
+        # # PAGE 0: MENÚ PRINCIPAL
+        # # =================================================
+
+        # if Page == 0 and ReFlag == 0:
+
+        #     # Botón superior del menú
+        #     if (
+        #         touch_x > 29
+        #         and touch_x < 92
+        #         and touch_y > 56
+        #         and touch_y < 95
+        #     ):
+        #         print("Words menu")
+
+        #         Page = 1
+        #         Photo_S = 0
+
+        #         Read_BMP(
+        #             image,
+        #             PagePath[Page],
+        #             0,
+        #             0
+        #         )
+
+        #         Show_Photo_Small(
+        #             image,
+        #             Photo_S
+        #         )
+
+        #         ReFlag = 1
+
         # =================================================
-        # PAGE 0: MENÚ PRINCIPAL
+        # PAGE 0: MENÚ DE PALABRAS
         # =================================================
 
-        if Page == 0 and ReFlag == 0:
-
-            # Botón superior del menú
-            if (
-                touch_x > 29
-                and touch_x < 92
-                and touch_y > 56
-                and touch_y < 95
-            ):
-                print("Words menu")
-
-                Page = 1
-                Photo_S = 0
-
-                Read_BMP(
-                    image,
-                    PagePath[Page],
-                    0,
-                    0
-                )
-
-                Show_Photo_Small(
-                    image,
-                    Photo_S
-                )
-
-                ReFlag = 1
-
-        # =================================================
-        # PAGE 1: MENÚ DE PALABRAS
-        # =================================================
-
-        elif Page == 1 and ReFlag == 0:
+        elif Page == 0 and ReFlag == 0:
 
             # Botón Home
             if (
@@ -573,7 +571,7 @@ try:
         # PAGE 2: IMAGEN GRANDE
         # =================================================
 
-        elif Page == 2 and ReFlag == 0:
+        elif Page == 1 and ReFlag == 0:
 
             # Volver al menú de palabras
             if (
@@ -584,7 +582,7 @@ try:
             ):
                 print("Words menu")
 
-                Page = 1
+                Page = 0
 
                 Read_BMP(
                     image,
