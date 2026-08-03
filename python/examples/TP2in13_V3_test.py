@@ -441,7 +441,7 @@ try:
         # PAGE 0: MENÚ DE PALABRAS
         # =================================================
 
-        elif Page == 0 and ReFlag == 0:
+        if Page == 0 and ReFlag == 0:
 
             # Botón Home
             if (
