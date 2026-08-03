@@ -47,7 +47,7 @@ flag_t = 1
 
 
 # ---------------------------------------------------------
-# Palabras que aparecerán en el menú
+# Palabras del menú
 # ---------------------------------------------------------
 
 Words_S = [
@@ -76,9 +76,9 @@ PhotoPath_L = [
 
 
 # ---------------------------------------------------------
-# Páginas del programa
+# Páginas
 #
-# Page 0 = menú de palabras
+# Page 0 = lista de palabras
 # Page 1 = imagen grande
 # ---------------------------------------------------------
 
@@ -107,7 +107,7 @@ def pthread_irq():
 
 
 # ---------------------------------------------------------
-# Abrir una imagen BMP
+# Abrir y pegar una imagen BMP
 # ---------------------------------------------------------
 
 def Read_BMP(image, filename, x, y):
@@ -124,8 +124,8 @@ def Read_BMP(image, filename, x, y):
 
 def Create_Vertical_Word(text):
     """
-    Crea el texto horizontalmente sobre una imagen de 122 x 43
-    y después lo rota 90 grados.
+    Crea una palabra horizontal en una imagen de 122 x 43
+    y después la rota 90 grados.
 
     El resultado final mide 43 x 122 píxeles.
     """
@@ -157,17 +157,14 @@ def Create_Vertical_Word(text):
         fill=0
     )
 
-    # Rotación vertical
-    word_image = word_image.rotate(
+    return word_image.rotate(
         90,
         expand=True
     )
 
-    return word_image
-
 
 # ---------------------------------------------------------
-# Mostrar cuatro palabras pequeñas
+# Mostrar palabras pequeñas
 # ---------------------------------------------------------
 
 def Show_Photo_Small(image, page):
@@ -175,21 +172,28 @@ def Show_Photo_Small(image, page):
     Muestra cuatro palabras por página.
 
     Página 0:
-        Ejercicio, Agua, Comida, Descanso
+        Ejercicio
+        Agua
+        Comida
+        Descanso
 
     Página 1:
-        Comida, Descanso, Peso, Pasos
+        Comida
+        Descanso
+        Peso
+        Pasos
 
     Página 2:
-        Peso, Pasos
+        Peso
+        Pasos
     """
 
     first_index = page * 2
 
-    # Limpiar el espacio donde aparecen las palabras.
-    # No se limpia la barra lateral de botones.
     draw = ImageDraw.Draw(image)
 
+    # Limpiar solamente la zona de palabras.
+    # La barra lateral de botones se conserva.
     draw.rectangle(
         (2, 2, 90, 248),
         fill=255
@@ -204,7 +208,7 @@ def Show_Photo_Small(image, page):
         x = column * 45 + 2
         y = row * 124 + 2
 
-        # Dibujar el fondo de cada espacio
+        # Limpiar el espacio de la palabra
         draw.rectangle(
             (x, y, x + 42, y + 121),
             fill=255
@@ -213,9 +217,9 @@ def Show_Photo_Small(image, page):
         if word_index >= len(Words_S):
             continue
 
-        text = Words_S[word_index]
-
-        word_image = Create_Vertical_Word(text)
+        word_image = Create_Vertical_Word(
+            Words_S[word_index]
+        )
 
         image.paste(
             word_image,
@@ -224,15 +228,28 @@ def Show_Photo_Small(image, page):
 
 
 # ---------------------------------------------------------
+# Mostrar la página de palabras
+# ---------------------------------------------------------
+
+def Show_Words_Page(image, words_page):
+    Read_BMP(
+        image,
+        PagePath[0],
+        0,
+        0
+    )
+
+    Show_Photo_Small(
+        image,
+        words_page
+    )
+
+
+# ---------------------------------------------------------
 # Mostrar una imagen grande
 # ---------------------------------------------------------
 
 def Show_Photo_Large(image, large):
-    """
-    Muestra la imagen grande correspondiente a la palabra
-    seleccionada.
-    """
-
     if large < 1 or large > 6:
         large = 1
 
@@ -250,14 +267,14 @@ def Show_Photo_Large(image, large):
 
 
 # ---------------------------------------------------------
-# Convertir coordenadas táctiles en número de elemento
+# Obtener la palabra seleccionada
 # ---------------------------------------------------------
 
-def Get_Selected_Item(touch_x, touch_y, page):
+def Get_Selected_Item(touch_x, touch_y, words_page):
     """
-    Devuelve un número entre 1 y 6.
+    Convierte la posición tocada en un elemento de la lista.
 
-    Distribución del menú:
+    Distribución:
 
         superior izquierda
         inferior izquierda
@@ -265,12 +282,19 @@ def Get_Selected_Item(touch_x, touch_y, page):
         inferior derecha
     """
 
-    column = 0 if touch_x < 46 else 1
-    row = 0 if touch_y < 124 else 1
+    if touch_x < 46:
+        column = 0
+    else:
+        column = 1
+
+    if touch_y < 124:
+        row = 0
+    else:
+        row = 1
 
     position = column * 2 + row
 
-    item_index = page * 2 + position
+    item_index = words_page * 2 + position
 
     if item_index >= len(Words_S):
         return None
@@ -316,10 +340,25 @@ try:
         24
     )
 
-    # Cargar menú inicial
+    # -----------------------------------------------------
+    # Empezar directamente en la lista de palabras
+    # -----------------------------------------------------
+
+    Page = 0
+    Photo_S = 0
+    Photo_L = 1
+
     image = Image.open(
-        os.path.join(picdir, "Menu.bmp")
+        os.path.join(
+            picdir,
+            PagePath[0]
+        )
     ).convert("1")
+
+    Show_Photo_Small(
+        image,
+        Photo_S
+    )
 
     epd.displayPartBaseImage(
         epd.getbuffer(image)
@@ -327,21 +366,14 @@ try:
 
     epd.init(epd.PART_UPDATE)
 
-    # Variables
-    i = 0
     j = 0
-
     ReFlag = 0
     SelfFlag = 0
-
-    Page = 0
-    Photo_L = 1
-    Photo_S = 0
 
     while True:
 
         # -------------------------------------------------
-        # Actualizar la pantalla después de un cambio
+        # Actualización parcial
         # -------------------------------------------------
 
         if ReFlag == 1:
@@ -349,7 +381,6 @@ try:
                 epd.getbuffer(image)
             )
 
-            i = 0
             j += 1
             ReFlag = 0
 
@@ -374,7 +405,7 @@ try:
             print("--- Full refresh ---")
 
         # -------------------------------------------------
-        # Leer la pantalla táctil
+        # Leer pantalla táctil
         # -------------------------------------------------
 
         gt.GT_Scan(
@@ -382,7 +413,6 @@ try:
             GT_Old
         )
 
-        # Si las coordenadas no cambiaron, no hacer nada
         if (
             GT_Old.X[0] == GT_Dev.X[0]
             and GT_Old.Y[0] == GT_Dev.Y[0]
@@ -394,7 +424,6 @@ try:
             continue
 
         GT_Dev.TouchpointFlag = 0
-        i += 1
 
         touch_x = GT_Dev.X[0]
         touch_y = GT_Dev.Y[0]
@@ -405,86 +434,46 @@ try:
             touch_y
         )
 
-        # # =================================================
-        # # PAGE 0: MENÚ PRINCIPAL
-        # # =================================================
-
-        # if Page == 0 and ReFlag == 0:
-
-        #     # Botón superior del menú
-        #     if (
-        #         touch_x > 29
-        #         and touch_x < 92
-        #         and touch_y > 56
-        #         and touch_y < 95
-        #     ):
-        #         print("Words menu")
-
-        #         Page = 1
-        #         Photo_S = 0
-
-        #         Read_BMP(
-        #             image,
-        #             PagePath[Page],
-        #             0,
-        #             0
-        #         )
-
-        #         Show_Photo_Small(
-        #             image,
-        #             Photo_S
-        #         )
-
-        #         ReFlag = 1
-
         # =================================================
-        # PAGE 0: MENÚ DE PALABRAS
+        # PAGE 0: LISTA DE PALABRAS
         # =================================================
 
         if Page == 0 and ReFlag == 0:
 
-            # Botón Home
-            if (
-                touch_x > 97
-                and touch_x < 119
-                and touch_y > 113
-                and touch_y < 136
-            ):
-                print("Home")
-
-                Page = 0
-
-                Read_BMP(
-                    image,
-                    PagePath[Page],
-                    0,
-                    0
-                )
-
-                ReFlag = 1
-
             # Botón siguiente página
-            elif (
+            if (
                 touch_x > 97
                 and touch_x < 119
                 and touch_y > 57
                 and touch_y < 78
             ):
-                print("Next page")
+                print("Next words page")
 
                 Photo_S += 1
 
                 if Photo_S > 2:
                     Photo_S = 0
 
-                Read_BMP(
+                Show_Words_Page(
                     image,
-                    PagePath[Page],
-                    0,
-                    0
+                    Photo_S
                 )
 
-                Show_Photo_Small(
+                ReFlag = 1
+
+            # Botón central:
+            # volver a la primera página de palabras
+            elif (
+                touch_x > 97
+                and touch_x < 119
+                and touch_y > 113
+                and touch_y < 136
+            ):
+                print("First words page")
+
+                Photo_S = 0
+
+                Show_Words_Page(
                     image,
                     Photo_S
                 )
@@ -498,21 +487,14 @@ try:
                 and touch_y > 169
                 and touch_y < 190
             ):
-                print("Previous page")
+                print("Previous words page")
 
-                if Photo_S > 0:
-                    Photo_S -= 1
-                else:
+                Photo_S -= 1
+
+                if Photo_S < 0:
                     Photo_S = 2
 
-                Read_BMP(
-                    image,
-                    PagePath[Page],
-                    0,
-                    0
-                )
-
-                Show_Photo_Small(
+                Show_Words_Page(
                     image,
                     Photo_S
                 )
@@ -526,7 +508,7 @@ try:
                 and touch_y > 220
                 and touch_y < 242
             ):
-                print("Refresh")
+                print("Refresh words")
 
                 SelfFlag = 1
                 ReFlag = 1
@@ -551,11 +533,11 @@ try:
                     )
 
                     Photo_L = selected_item
-                    Page = 2
+                    Page = 1
 
                     Read_BMP(
                         image,
-                        PagePath[Page],
+                        PagePath[1],
                         0,
                         0
                     )
@@ -568,37 +550,30 @@ try:
                     ReFlag = 1
 
         # =================================================
-        # PAGE 2: IMAGEN GRANDE
+        # PAGE 1: IMAGEN GRANDE
         # =================================================
 
         elif Page == 1 and ReFlag == 0:
 
-            # Volver al menú de palabras
+            # Volver a la lista de palabras actual
             if (
                 touch_x > 96
                 and touch_x < 117
                 and touch_y > 4
                 and touch_y < 25
             ):
-                print("Words menu")
+                print("Back to words")
 
                 Page = 0
 
-                Read_BMP(
-                    image,
-                    PagePath[Page],
-                    0,
-                    0
-                )
-
-                Show_Photo_Small(
+                Show_Words_Page(
                     image,
                     Photo_S
                 )
 
                 ReFlag = 1
 
-            # Imagen siguiente
+            # Elemento siguiente
             elif (
                 touch_x > 96
                 and touch_x < 117
@@ -609,12 +584,12 @@ try:
 
                 Photo_L += 1
 
-                if Photo_L > 6:
+                if Photo_L > len(Words_S):
                     Photo_L = 1
 
                 Read_BMP(
                     image,
-                    PagePath[Page],
+                    PagePath[1],
                     0,
                     0
                 )
@@ -626,27 +601,26 @@ try:
 
                 ReFlag = 1
 
-            # Volver al inicio
+            # Volver a la primera página de palabras
             elif (
                 touch_x > 96
                 and touch_x < 117
                 and touch_y > 113
                 and touch_y < 136
             ):
-                print("Home")
+                print("First words page")
 
                 Page = 0
+                Photo_S = 0
 
-                Read_BMP(
+                Show_Words_Page(
                     image,
-                    PagePath[Page],
-                    0,
-                    0
+                    Photo_S
                 )
 
                 ReFlag = 1
 
-            # Imagen anterior
+            # Elemento anterior
             elif (
                 touch_x > 96
                 and touch_x < 117
@@ -658,11 +632,11 @@ try:
                 Photo_L -= 1
 
                 if Photo_L < 1:
-                    Photo_L = 6
+                    Photo_L = len(Words_S)
 
                 Read_BMP(
                     image,
-                    PagePath[Page],
+                    PagePath[1],
                     0,
                     0
                 )
