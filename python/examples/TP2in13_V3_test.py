@@ -30,13 +30,27 @@ def pthread_irq() :
     print("thread:exit")
 
 def Show_Photo_Small(image, small):
+    draw = ImageDraw.Draw(image)
+
     for t in range(1, 5):
-        if(small*2+t > 6):
+        x = ((t - 1) // 2) * 45 + 2
+        y = (t % 2) * 124 + 2
+
+        index = small * 2 + t
+
+        # Si no existe la imagen, mostrar la imagen por defecto
+        if index > 6:
             newimage = Image.open(os.path.join(picdir, PhotoPath_S[0]))
-            image.paste(newimage, ((t-1)//2*45+2, (t%2)*124+2))
+            image.paste(newimage, (x, y))
+            continue
+
+        # Sustituir ejercicio.bmp por texto
+        if PhotoPath_S[index] == "ejercicio.bmp":
+            draw.rectangle((x, y, x + 43, y + 122), fill=255)   # Fondo blanco
+            draw.text((x + 3, y + 50), "Ejercicio", font=font15, fill=0)
         else:
-            newimage = Image.open(os.path.join(picdir, PhotoPath_S[small*2+t]))
-            image.paste(newimage, ((t-1)//2*45+2, (t%2)*124+2))
+            newimage = Image.open(os.path.join(picdir, PhotoPath_S[index]))
+            image.paste(newimage, (x, y))
 
 def Show_Photo_Large(image, large):
     if(large > 6):
