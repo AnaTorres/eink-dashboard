@@ -52,8 +52,8 @@ flag_t = 1
 
 Words_S = [
     "Ejercicio",
-    "Agua",
-    "Comida",
+    "Estudio",
+    "Organizacion",
     "Descanso",
     "Peso",
     "Pasos",
@@ -164,10 +164,10 @@ def Create_Vertical_Word(text):
 
 
 # ---------------------------------------------------------
-# Mostrar palabras pequeñas
+# Mostrar palabras 
 # ---------------------------------------------------------
 
-def Show_Photo_Small(image, page):
+def Show_words(image, page):
     """
     Muestra cuatro palabras por página.
 
@@ -239,7 +239,7 @@ def Show_Words_Page(image, words_page):
         0
     )
 
-    Show_Photo_Small(
+    Show_words(
         image,
         words_page
     )
@@ -355,7 +355,7 @@ try:
         )
     ).convert("1")
 
-    Show_Photo_Small(
+    Show_words(
         image,
         Photo_S
     )
