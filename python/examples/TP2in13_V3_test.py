@@ -19,6 +19,15 @@ import threading
 logging.basicConfig(level=logging.DEBUG)
 flag_t = 1
 
+Words_S = [
+    "Ejercicio",
+    "Agua",
+    "Comida",
+    "Descanso",
+    "Peso",
+    "Pasos",
+]
+
 def pthread_irq() :
     print("pthread running")
     while flag_t == 1 :
@@ -29,28 +38,56 @@ def pthread_irq() :
         time.sleep(0.01)    
     print("thread:exit")
 
-def Show_Photo_Small(image, small):
-    draw = ImageDraw.Draw(image)
+def Show_Photo_Small(image, page):
+    """
+    Muestra cuatro palabras por página.
 
-    for t in range(1, 5):
-        x = ((t - 1) // 2) * 45 + 2
-        y = (t % 2) * 124 + 2
+    Cada palabra se crea horizontalmente en una imagen de 122 x 43 píxeles
+    y después se rota 90 grados para ocupar un espacio vertical de 43 x 122.
+    """
 
-        index = small * 2 + t
+    # La página avanza de dos en dos, igual que en el código original
+    first_index = page * 2
 
-        # Si no existe la imagen, mostrar la imagen por defecto
-        if index > 6:
-            newimage = Image.open(os.path.join(picdir, PhotoPath_S[0]))
-            image.paste(newimage, (x, y))
-            continue
+    for position in range(4):
+        word_index = first_index + position
 
-        # Sustituir ejercicio.bmp por texto
-        if PhotoPath_S[index] == "ejercicio.bmp":
-            draw.rectangle((x, y, x + 43, y + 122), fill=255)   # Fondo blanco
-            draw.text((x + 3, y + 50), "Ejercicio", font=font15, fill=0)
-        else:
-            newimage = Image.open(os.path.join(picdir, PhotoPath_S[index]))
-            image.paste(newimage, (x, y))
+        # Posición de cada espacio de 43 x 122
+        column = position // 2
+        row = position % 2
+
+        x = column * 45 + 2
+        y = row * 124 + 2
+
+        # Fondo blanco para la palabra
+        word_image = Image.new("1", (122, 43), 255)
+        word_draw = ImageDraw.Draw(word_image)
+
+        if word_index < len(Words_S):
+            text = Words_S[word_index]
+
+            # Calcular el tamaño del texto
+            bbox = word_draw.textbbox((0, 0), text, font=font15)
+
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+
+            # Centrar el texto antes de rotarlo
+            text_x = (122 - text_width) // 2
+            text_y = (43 - text_height) // 2
+
+            word_draw.text(
+                (text_x, text_y),
+                text,
+                font=font15,
+                fill=0
+            )
+
+        # Rotar el contenido para mostrarlo verticalmente
+        word_image = word_image.rotate(90, expand=True)
+
+        # Pegar la palabra en la imagen principal
+        image.paste(word_image, (x, y))
 
 def Show_Photo_Large(image, large):
     if(large > 6):
