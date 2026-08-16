@@ -172,7 +172,7 @@ def show_activities(
 
     draw.text(
         (100, 170),
-        "<",
+        "◀️",
         font=font15,
         fill=0
     )
