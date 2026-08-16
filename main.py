@@ -14,11 +14,7 @@ import threading
 # =========================================================
 
 libdir = os.path.join(
-    os.path.dirname(
-        os.path.dirname(
-            os.path.realpath(__file__)
-        )
-    ),
+    os.path.realpath(__file__),
     "lib"
 )
 
