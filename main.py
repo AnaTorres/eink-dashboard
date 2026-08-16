@@ -62,7 +62,7 @@ from touch import (
     is_next_button,
     is_home_button,
     is_previous_button,
-    is_refresh_button,
+    is_bottom_button,
     is_activity_area,
     get_selected_activity
 )
@@ -476,52 +476,6 @@ try:
 
 
             # ---------------------------------------------
-            # RELOAD ACTIVITIES
-            # ---------------------------------------------
-
-            elif is_refresh_button(
-                touch_x,
-                touch_y
-            ):
-
-                print(
-                    "Reload activities"
-                )
-
-
-                activities = (
-                    load_activities()
-                )
-
-
-                total_pages = (
-                    get_total_pages(
-                        activities
-                    )
-                )
-
-
-                if (
-                    current_page
-                    >= total_pages
-                ):
-
-                    current_page = 0
-
-
-                show_activities(
-                    image,
-                    activities,
-                    current_page
-                )
-
-
-                full_refresh_required = True
-
-                refresh_required = True
-
-
-            # ---------------------------------------------
             # ACTIVIDAD
             # ---------------------------------------------
 
@@ -582,7 +536,6 @@ try:
             == PAGE_DURATION
         ):
 
-
             # ---------------------------------------------
             # + MINUTOS
             # ---------------------------------------------
@@ -591,11 +544,7 @@ try:
                 touch_x,
                 touch_y
             ):
-
-                selected_minutes += (
-                    MINUTES_STEP
-                )
-
+                selected_minutes += MINUTES_STEP
 
                 show_duration_screen(
                     image,
@@ -603,39 +552,30 @@ try:
                     selected_minutes
                 )
 
-
                 refresh_required = True
 
 
             # ---------------------------------------------
-            # SAVE
+            # GUARDAR
             # ---------------------------------------------
 
             elif is_home_button(
                 touch_x,
                 touch_y
             ):
-
                 save_time_record(
                     selected_activity,
                     selected_minutes
                 )
 
-
-                current_screen = (
-                    PAGE_ACTIVITY_LIST
-                )
-
-
+                current_screen = PAGE_ACTIVITY_LIST
                 selected_activity = None
-
 
                 show_activities(
                     image,
                     activities,
                     current_page
                 )
-
 
                 refresh_required = True
 
@@ -648,21 +588,10 @@ try:
                 touch_x,
                 touch_y
             ):
+                selected_minutes -= MINUTES_STEP
 
-                selected_minutes -= (
-                    MINUTES_STEP
-                )
-
-
-                if (
-                    selected_minutes
-                    < MIN_MINUTES
-                ):
-
-                    selected_minutes = (
-                        MIN_MINUTES
-                    )
-
+                if selected_minutes < MIN_MINUTES:
+                    selected_minutes = MIN_MINUTES
 
                 show_duration_screen(
                     image,
@@ -670,33 +599,25 @@ try:
                     selected_minutes
                 )
 
-
                 refresh_required = True
 
 
             # ---------------------------------------------
-            # BACK
+            # VOLVER
             # ---------------------------------------------
 
-            elif is_refresh_button(
+            elif is_bottom_button(
                 touch_x,
                 touch_y
             ):
-
-                current_screen = (
-                    PAGE_ACTIVITY_LIST
-                )
-
-
+                current_screen = PAGE_ACTIVITY_LIST
                 selected_activity = None
-
 
                 show_activities(
                     image,
                     activities,
                     current_page
                 )
-
 
                 refresh_required = True
 

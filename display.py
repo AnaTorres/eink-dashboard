@@ -184,12 +184,6 @@ def show_activities(
         fill=0
     )
 
-    draw.text(
-        (100, 220),
-        "R",
-        font=font15,
-        fill=0
-    )
 
 
 def show_duration_screen(
