@@ -24,10 +24,6 @@ font24 = ImageFont.truetype(
 
 
 def create_blank_image():
-    """
-    Crea una imagen blanca del tamaño de la pantalla.
-    """
-
     return Image.new(
         "1",
         (
@@ -38,28 +34,17 @@ def create_blank_image():
     )
 
 
-def create_vertical_text(
+def draw_centered_text(
+    draw,
+    box,
     text,
-    width=122,
-    height=43,
-    font=font15
+    font
 ):
     """
-    Crea texto horizontal y luego lo rota 90 grados.
+    Escribe texto horizontal centrado dentro de un rectángulo.
     """
 
-    image = Image.new(
-        "1",
-        (
-            width,
-            height
-        ),
-        255
-    )
-
-    draw = ImageDraw.Draw(
-        image
-    )
+    x1, y1, x2, y2 = box
 
     bbox = draw.textbbox(
         (0, 0),
@@ -67,39 +52,22 @@ def create_vertical_text(
         font=font
     )
 
-    text_width = (
-        bbox[2]
-        - bbox[0]
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    x = x1 + (
+        (x2 - x1 - text_width) // 2
     )
 
-    text_height = (
-        bbox[3]
-        - bbox[1]
+    y = y1 + (
+        (y2 - y1 - text_height) // 2
     )
-
-    x = (
-        width
-        - text_width
-    ) // 2
-
-    y = (
-        height
-        - text_height
-    ) // 2
 
     draw.text(
-        (
-            x,
-            y
-        ),
+        (x, y),
         text,
         font=font,
         fill=0
-    )
-
-    return image.rotate(
-        90,
-        expand=True
     )
 
 
@@ -109,13 +77,19 @@ def show_activities(
     page
 ):
     """
-    Dibuja las actividades de una página.
+    Muestra cuatro actividades horizontalmente.
+
+    La zona izquierda:
+        x = 2 ... 90
+
+    se divide en cuatro filas.
     """
 
     draw = ImageDraw.Draw(
         image
     )
 
+    # Limpiar pantalla
     draw.rectangle(
         (
             0,
@@ -127,9 +101,11 @@ def show_activities(
     )
 
     first_index = (
-        page
-        * ITEMS_PER_PAGE
+        page * ITEMS_PER_PAGE
     )
+
+    # Alto aproximado de cada actividad
+    item_height = 60
 
     for position in range(
         ITEMS_PER_PAGE
@@ -145,91 +121,71 @@ def show_activities(
         ):
             continue
 
-        activity = (
-            activities[
-                index
-            ]
-        )
+        activity = activities[index]
 
         text = str(
             activity["name"]
         )
 
-        column = (
-            position // 2
-        )
-
-        row = (
-            position % 2
-        )
-
-        x = (
-            column * 45
+        y1 = (
+            position * item_height
             + 2
         )
 
-        y = (
-            row * 124
-            + 2
+        y2 = (
+            y1
+            + item_height
+            - 4
         )
 
-        word_image = (
-            create_vertical_text(
-                text
-            )
+        box = (
+            2,
+            y1,
+            90,
+            y2
         )
 
-        image.paste(
-            word_image,
-            (
-                x,
-                y
-            )
+        # Rectángulo alrededor de la actividad
+        draw.rectangle(
+            box,
+            outline=0
         )
 
-    draw = ImageDraw.Draw(
-        image
-    )
+        # Texto horizontal
+        draw_centered_text(
+            draw,
+            box,
+            text,
+            font15
+        )
 
-    # Botón siguiente
+    # ---------------------------------------------
+    # Botones laterales
+    # ---------------------------------------------
+
     draw.text(
-        (
-            100,
-            60
-        ),
+        (100, 60),
         ">",
         font=font15,
         fill=0
     )
 
-    # Primera página
     draw.text(
-        (
-            100,
-            115
-        ),
+        (100, 115),
         "H",
         font=font15,
         fill=0
     )
 
-    # Página anterior
     draw.text(
-        (
-            100,
-            170
-        ),
+        (100, 170),
         "<",
         font=font15,
         fill=0
     )
 
-    # Recargar actividades
     draw.text(
-        (
-            100,
-            220
-        ),
+        (100, 220),
         "R",
         font=font15,
         fill=0
@@ -242,7 +198,7 @@ def show_duration_screen(
     minutes
 ):
     """
-    Pantalla para modificar y guardar el tiempo.
+    Pantalla para seleccionar duración.
     """
 
     draw = ImageDraw.Draw(
@@ -259,98 +215,61 @@ def show_duration_screen(
         fill=255
     )
 
-    # -----------------------------------------------------
-    # Nombre actividad
-    # -----------------------------------------------------
-
-    activity_image = (
-        create_vertical_text(
-            str(
-                activity["name"]
-            ),
-            width=190,
-            height=30,
-            font=font15
-        )
-    )
-
-    image.paste(
-        activity_image,
+    # Nombre de la actividad
+    draw_centered_text(
+        draw,
         (
             5,
-            25
-        )
-    )
-
-    # -----------------------------------------------------
-    # Duración
-    # -----------------------------------------------------
-
-    minutes_text = (
-        str(minutes)
-        + " min"
-    )
-
-    time_image = (
-        create_vertical_text(
-            minutes_text,
-            width=110,
-            height=35,
-            font=font24
-        )
-    )
-
-    image.paste(
-        time_image,
-        (
-            50,
-            70
-        )
-    )
-
-    draw = ImageDraw.Draw(
-        image
-    )
-
-    # +15
-    draw.text(
-        (
-            100,
-            60
+            20,
+            90,
+            80
         ),
+        str(
+            activity["name"]
+        ),
+        font15
+    )
+
+    # Tiempo
+    draw_centered_text(
+        draw,
+        (
+            5,
+            90,
+            90,
+            160
+        ),
+        str(minutes) + " min",
+        font24
+    )
+
+    # + minutos
+    draw.text(
+        (100, 60),
         "+",
         font=font24,
         fill=0
     )
 
-    # Save
+    # Guardar
     draw.text(
-        (
-            100,
-            115
-        ),
+        (100, 115),
         "S",
         font=font15,
         fill=0
     )
 
-    # -15
+    # - minutos
     draw.text(
-        (
-            100,
-            170
-        ),
+        (100, 170),
         "-",
         font=font24,
         fill=0
     )
 
-    # Back
+    # Volver
     draw.text(
-        (
-            100,
-            220
-        ),
+        (100, 220),
         "B",
         font=font15,
         fill=0
