@@ -1,10 +1,15 @@
+Página 1
 Ejercicio
 Agua
 Comida
 Descanso
+
+Página 2
 Peso
 Pasos
 Dormir
 Caminar
+
+Página 3
 Leer
 Trabajo
