@@ -60,6 +60,7 @@ from display import (
 
 from touch import (
     is_next_button,
+    is_save_button,
     is_previous_button,
     is_bottom_button,
     is_activity_area,
@@ -421,28 +422,6 @@ try:
 
 
             # ---------------------------------------------
-            # HOME
-            # ---------------------------------------------
-
-            elif is_home_button(
-                touch_x,
-                touch_y
-            ):
-
-                current_page = 0
-
-
-                show_activities(
-                    image,
-                    activities,
-                    current_page
-                )
-
-
-                refresh_required = True
-
-
-            # ---------------------------------------------
             # PREVIOUS
             # ---------------------------------------------
 
@@ -558,7 +537,7 @@ try:
             # GUARDAR
             # ---------------------------------------------
 
-            elif is_home_button(
+            elif is_save_button(
                 touch_x,
                 touch_y
             ):
