@@ -60,7 +60,6 @@ from display import (
 
 from touch import (
     is_next_button,
-    is_home_button,
     is_previous_button,
     is_bottom_button,
     is_activity_area,
