@@ -17,9 +17,8 @@ from PIL import Image, ImageDraw, ImageFont
 # RUTAS
 # =========================================================
 
-picdir = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    "pic/2in13"
+scriptdir = os.path.dirname(
+    os.path.realpath(__file__)
 )
 
 fontdir = os.path.join(
@@ -54,12 +53,12 @@ flag_t = 1
 # =========================================================
 
 ACTIVITIES_FILE = os.path.join(
-    picdir,
+    scriptdir,
     "activities.json"
 )
 
 RECORDS_FILE = os.path.join(
-    picdir,
+    scriptdir,
     "time_records.json"
 )
 
