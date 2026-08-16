@@ -7,6 +7,7 @@ import time
 import logging
 import threading
 import math
+import json
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -48,53 +49,82 @@ flag_t = 1
 
 
 # ---------------------------------------------------------
-# Archivo donde están las palabras
+# Archivo JSON
 # ---------------------------------------------------------
 
-WORDS_FILE = os.path.join(
+ITEMS_FILE = os.path.join(
     picdir,
-    "words.txt"
+    "words.json"
 )
 
 
 # ---------------------------------------------------------
-# Cargar palabras desde archivo
+# Cargar elementos desde JSON
 # ---------------------------------------------------------
 
-def Load_Words():
+def Load_Items():
     """
-    Lee words.txt.
+    Lee los elementos desde words.json.
 
-    Cada línea representa una palabra.
+    Formato esperado:
 
-    Ejemplo:
-
-    Ejercicio
-    Agua
-    Comida
-    Descanso
+    [
+        {
+            "id": 1,
+            "name": "Ejercicio"
+        },
+        {
+            "id": 2,
+            "name": "Agua"
+        }
+    ]
     """
-
-    words = []
 
     try:
-        with open(WORDS_FILE, "r", encoding="utf-8") as file:
-            for line in file:
-                word = line.strip()
+        with open(ITEMS_FILE, "r", encoding="utf-8") as file:
+            data = json.load(file)
 
-                # Ignorar líneas vacías
-                if word:
-                    words.append(word)
+        # Validar que el JSON contenga una lista
+        if not isinstance(data, list):
+            print("ERROR: words.json debe contener una lista")
+            return []
+
+        items = []
+
+        for item in data:
+
+            # Ignorar valores que no sean objetos
+            if not isinstance(item, dict):
+                continue
+
+            # Ignorar elementos sin name
+            if "name" not in item:
+                continue
+
+            name = str(item["name"]).strip()
+
+            if not name:
+                continue
+
+            items.append(item)
+
+        return items
 
     except FileNotFoundError:
-        print("ERROR: No se encontró:")
-        print(WORDS_FILE)
+        print("ERROR: No se encontró el archivo:")
+        print(ITEMS_FILE)
 
-    return words
+        return []
+
+    except json.JSONDecodeError as error:
+        print("ERROR: El archivo JSON no es válido")
+        print(error)
+
+        return []
 
 
 # ---------------------------------------------------------
-# Touch thread
+# Hilo para detectar touch
 # ---------------------------------------------------------
 
 def pthread_irq():
@@ -114,7 +144,7 @@ def pthread_irq():
 
 
 # ---------------------------------------------------------
-# Leer una imagen BMP
+# Leer imagen BMP
 # ---------------------------------------------------------
 
 def Read_BMP(image, filename, x, y):
@@ -133,19 +163,15 @@ def Read_BMP(image, filename, x, y):
 
 
 # ---------------------------------------------------------
-# Crear una palabra vertical
+# Crear texto vertical
 # ---------------------------------------------------------
 
 def Create_Vertical_Word(text):
-
     """
-    Crea una imagen horizontal de 122 x 43.
+    Crea una palabra en una imagen de 122 x 43
+    y después la rota 90 grados.
 
-    Escribe la palabra centrada.
-
-    Después rota la imagen 90 grados.
-
-    Resultado:
+    Resultado final:
         43 x 122
     """
 
@@ -197,46 +223,44 @@ def Create_Vertical_Word(text):
 
 
 # ---------------------------------------------------------
-# Número de páginas
+# Calcular total de páginas
 # ---------------------------------------------------------
 
 def Get_Total_Pages():
-
     """
-    Cada página muestra 4 palabras.
+    Cada página muestra cuatro elementos.
     """
 
-    if len(Words_S) == 0:
+    if len(Items) == 0:
         return 1
 
     return math.ceil(
-        len(Words_S) / 4
+        len(Items) / 4
     )
 
 
 # ---------------------------------------------------------
-# Mostrar palabras
+# Mostrar una página de palabras
 # ---------------------------------------------------------
 
-def Show_Words(image, page):
-
+def Show_Items(image, page):
     """
-    Muestra máximo 4 palabras por página.
+    Muestra máximo cuatro elementos por página.
+
+    Ejemplo:
 
     Página 0:
-        palabras 0 - 3
+        Items 0 - 3
 
     Página 1:
-        palabras 4 - 7
+        Items 4 - 7
 
     Página 2:
-        palabras 8 - 11
-
-    etc.
+        Items 8 - 11
     """
 
     # -----------------------------------------------------
-    # Primero cargar el fondo con los botones
+    # Cargar fondo
     # -----------------------------------------------------
 
     Read_BMP(
@@ -245,6 +269,7 @@ def Show_Words(image, page):
         0,
         0
     )
+
 
     # -----------------------------------------------------
     # Limpiar zona donde aparecen las palabras
@@ -259,43 +284,73 @@ def Show_Words(image, page):
         fill=255
     )
 
-    # Primera palabra de esta página
-    first_index = page * 4
 
     # -----------------------------------------------------
-    # Mostrar máximo cuatro palabras
+    # Primer elemento de esta página
+    # -----------------------------------------------------
+
+    first_index = (
+        page * 4
+    )
+
+
+    # -----------------------------------------------------
+    # Máximo cuatro elementos
     # -----------------------------------------------------
 
     for position in range(4):
 
-        word_index = (
-            first_index + position
+        item_index = (
+            first_index
+            + position
         )
 
-        if word_index >= len(Words_S):
+
+        if item_index >= len(Items):
             continue
 
-        # -----------------------------------------------
-        # Calcular posición
-        # -----------------------------------------------
 
-        column = position // 2
-        row = position % 2
+        # -------------------------------------------------
+        # Obtener nombre
+        # -------------------------------------------------
 
-        x = column * 45 + 2
-        y = row * 124 + 2
-
-        # -----------------------------------------------
-        # Crear palabra
-        # -----------------------------------------------
-
-        word_image = Create_Vertical_Word(
-            Words_S[word_index]
+        text = str(
+            Items[item_index]["name"]
         )
 
-        # -----------------------------------------------
+
+        # -------------------------------------------------
+        # Calcular posición en pantalla
+        # -------------------------------------------------
+
+        column = position // 2
+
+        row = position % 2
+
+
+        x = (
+            column * 45
+            + 2
+        )
+
+        y = (
+            row * 124
+            + 2
+        )
+
+
+        # -------------------------------------------------
+        # Crear palabra
+        # -------------------------------------------------
+
+        word_image = Create_Vertical_Word(
+            text
+        )
+
+
+        # -------------------------------------------------
         # Pegar palabra
-        # -----------------------------------------------
+        # -------------------------------------------------
 
         image.paste(
             word_image,
@@ -304,64 +359,119 @@ def Show_Words(image, page):
 
 
 # ---------------------------------------------------------
-# Saber qué palabra se tocó
+# Detectar qué elemento se tocó
 # ---------------------------------------------------------
 
-def Get_Selected_Word(
+def Get_Selected_Item(
     touch_x,
     touch_y,
     page
 ):
 
     """
-    Convierte coordenadas táctiles en índice
-    de una palabra.
+    Convierte las coordenadas táctiles
+    en el índice correspondiente de Items.
     """
 
-    # Zona izquierda/derecha
+    # -----------------------------------------------------
+    # Columna
+    # -----------------------------------------------------
+
     if touch_x < 46:
         column = 0
     else:
         column = 1
 
-    # Zona superior/inferior
+
+    # -----------------------------------------------------
+    # Fila
+    # -----------------------------------------------------
+
     if touch_y < 124:
         row = 0
     else:
         row = 1
+
+
+    # -----------------------------------------------------
+    # Posición dentro de la página
+    # -----------------------------------------------------
 
     position = (
         column * 2
         + row
     )
 
-    word_index = (
+
+    # -----------------------------------------------------
+    # Índice dentro de Items
+    # -----------------------------------------------------
+
+    item_index = (
         page * 4
         + position
     )
 
-    if word_index >= len(Words_S):
+
+    if item_index >= len(Items):
         return None
 
-    return word_index
+
+    return item_index
 
 
 # ---------------------------------------------------------
-# Programa principal
+# Mostrar información del elemento seleccionado
 # ---------------------------------------------------------
+
+def On_Item_Selected(item):
+    """
+    Esta función se ejecuta cuando el usuario
+    toca una palabra.
+
+    Aquí podrás añadir después:
+    - guardar algo en DB
+    - cambiar de pantalla
+    - ejecutar una acción
+    - llamar a una API
+    """
+
+    print("------------------------")
+
+    print(
+        "ID:",
+        item.get("id")
+    )
+
+    print(
+        "Nombre:",
+        item.get("name")
+    )
+
+    print("------------------------")
+
+
+# =========================================================
+# PROGRAMA PRINCIPAL
+# =========================================================
 
 try:
 
     logging.info(
-        "epd2in13_V3 Dynamic Words"
+        "epd2in13_V3 JSON Menu"
     )
 
 
     # -----------------------------------------------------
-    # Inicializar pantalla y touch
+    # Inicializar pantalla
     # -----------------------------------------------------
 
     epd = epd2in13_V3.EPD()
+
+
+    # -----------------------------------------------------
+    # Inicializar touch
+    # -----------------------------------------------------
 
     gt = gt1151.GT1151()
 
@@ -369,6 +479,10 @@ try:
 
     GT_Old = gt1151.GT_Development()
 
+
+    # -----------------------------------------------------
+    # Inicialización completa
+    # -----------------------------------------------------
 
     epd.init(
         epd.FULL_UPDATE
@@ -382,7 +496,7 @@ try:
 
 
     # -----------------------------------------------------
-    # Thread táctil
+    # Iniciar thread táctil
     # -----------------------------------------------------
 
     t = threading.Thread(
@@ -408,28 +522,41 @@ try:
 
 
     # -----------------------------------------------------
-    # Leer palabras desde archivo
+    # Cargar Items desde JSON
     # -----------------------------------------------------
 
-    Words_S = Load_Words()
+    Items = Load_Items()
 
 
     print("")
-    print("Palabras cargadas:")
-    print(Words_S)
+    print("------------------------")
+    print("Elementos cargados")
+    print("------------------------")
+
+
+    for item in Items:
+
+        print(
+            item.get("id"),
+            "-",
+            item.get("name")
+        )
+
+
+    print("------------------------")
     print("")
 
 
     # -----------------------------------------------------
-    # Número de páginas
+    # Calcular páginas
     # -----------------------------------------------------
 
     Total_Pages = Get_Total_Pages()
 
 
     print(
-        "Total palabras:",
-        len(Words_S)
+        "Total elementos:",
+        len(Items)
     )
 
     print(
@@ -439,7 +566,7 @@ try:
 
 
     # -----------------------------------------------------
-    # Página inicial
+    # Página actual
     # -----------------------------------------------------
 
     Current_Page = 0
@@ -457,14 +584,20 @@ try:
     ).convert("1")
 
 
-    # Dibujar primera página
-    Show_Words(
+    # -----------------------------------------------------
+    # Mostrar primera página
+    # -----------------------------------------------------
+
+    Show_Items(
         image,
         Current_Page
     )
 
 
-    # Mostrar pantalla
+    # -----------------------------------------------------
+    # Mostrar en pantalla
+    # -----------------------------------------------------
+
     epd.displayPartBaseImage(
         epd.getbuffer(
             image
@@ -478,7 +611,7 @@ try:
 
 
     # -----------------------------------------------------
-    # Variables de actualización
+    # Variables de refresh
     # -----------------------------------------------------
 
     Refresh_Count = 0
@@ -517,7 +650,7 @@ try:
 
 
         # -------------------------------------------------
-        # Refresh completo periódico
+        # Refresh completo
         # -------------------------------------------------
 
         elif (
@@ -529,9 +662,11 @@ try:
 
             Refresh_Count = 0
 
+
             epd.init(
                 epd.FULL_UPDATE
             )
+
 
             epd.displayPartBaseImage(
                 epd.getbuffer(
@@ -539,9 +674,11 @@ try:
                 )
             )
 
+
             epd.init(
                 epd.PART_UPDATE
             )
+
 
             print(
                 "--- Full refresh ---"
@@ -559,7 +696,7 @@ try:
 
 
         # -------------------------------------------------
-        # Si no cambió el toque
+        # Ignorar si no cambió
         # -------------------------------------------------
 
         if (
@@ -569,14 +706,16 @@ try:
             and
             GT_Old.S[0] == GT_Dev.S[0]
         ):
+
             continue
 
 
         # -------------------------------------------------
-        # Si no hay toque
+        # Si no existe touch
         # -------------------------------------------------
 
         if not GT_Dev.TouchpointFlag:
+
             continue
 
 
@@ -602,26 +741,28 @@ try:
         if (
             touch_x > 97
             and touch_x < 119
-            and touch_y > 57
+            and
+            touch_y > 57
             and touch_y < 78
         ):
-
-            print(
-                "Next page"
-            )
-
 
             Current_Page += 1
 
 
-            # Si estamos después de la última página
-            # volver a la primera
             if Current_Page >= Total_Pages:
 
                 Current_Page = 0
 
 
-            Show_Words(
+            print(
+                "Next page:",
+                Current_Page + 1,
+                "/",
+                Total_Pages
+            )
+
+
+            Show_Items(
                 image,
                 Current_Page
             )
@@ -633,25 +774,26 @@ try:
         # =================================================
         # BOTÓN HOME
         #
-        # Ahora simplemente vuelve a la página 0
+        # Vuelve a la primera página
         # =================================================
 
         elif (
             touch_x > 97
             and touch_x < 119
-            and touch_y > 113
+            and
+            touch_y > 113
             and touch_y < 136
         ):
+
+            Current_Page = 0
+
 
             print(
                 "First page"
             )
 
 
-            Current_Page = 0
-
-
-            Show_Words(
+            Show_Items(
                 image,
                 Current_Page
             )
@@ -667,20 +809,14 @@ try:
         elif (
             touch_x > 97
             and touch_x < 119
-            and touch_y > 169
+            and
+            touch_y > 169
             and touch_y < 190
         ):
-
-            print(
-                "Previous page"
-            )
-
 
             Current_Page -= 1
 
 
-            # Si estamos antes de la primera
-            # ir a la última
             if Current_Page < 0:
 
                 Current_Page = (
@@ -688,7 +824,15 @@ try:
                 )
 
 
-            Show_Words(
+            print(
+                "Previous page:",
+                Current_Page + 1,
+                "/",
+                Total_Pages
+            )
+
+
+            Show_Items(
                 image,
                 Current_Page
             )
@@ -704,35 +848,55 @@ try:
         elif (
             touch_x > 97
             and touch_x < 119
-            and touch_y > 220
+            and
+            touch_y > 220
             and touch_y < 242
         ):
 
             print(
-                "Refresh"
+                "Reload JSON"
             )
 
 
             # ---------------------------------------------
-            # Volver a leer words.txt
-            #
-            # Esto permite modificar el archivo mientras
-            # el programa está funcionando.
+            # Volver a leer words.json
             # ---------------------------------------------
 
-            Words_S = Load_Words()
+            Items = Load_Items()
+
+
+            # ---------------------------------------------
+            # Recalcular páginas
+            # ---------------------------------------------
 
             Total_Pages = Get_Total_Pages()
 
 
-            # Si al eliminar palabras la página actual
-            # ya no existe, volver a la primera
+            print(
+                "Total elementos:",
+                len(Items)
+            )
+
+            print(
+                "Total páginas:",
+                Total_Pages
+            )
+
+
+            # ---------------------------------------------
+            # Si la página actual ya no existe
+            # ---------------------------------------------
+
             if Current_Page >= Total_Pages:
 
                 Current_Page = 0
 
 
-            Show_Words(
+            # ---------------------------------------------
+            # Mostrar nuevos datos
+            # ---------------------------------------------
+
+            Show_Items(
                 image,
                 Current_Page
             )
@@ -744,17 +908,18 @@ try:
 
 
         # =================================================
-        # TOCAR UNA PALABRA
+        # SELECCIONAR PALABRA
         # =================================================
 
         elif (
             touch_x > 2
             and touch_x < 90
-            and touch_y > 2
+            and
+            touch_y > 2
             and touch_y < 248
         ):
 
-            selected_index = Get_Selected_Word(
+            selected_index = Get_Selected_Item(
                 touch_x,
                 touch_y,
                 Current_Page
@@ -763,28 +928,19 @@ try:
 
             if selected_index is not None:
 
-                selected_word = (
-                    Words_S[selected_index]
+                selected_item = (
+                    Items[selected_index]
                 )
 
 
-                print(
-                    "Selected:",
-                    selected_word
+                On_Item_Selected(
+                    selected_item
                 )
 
 
-                # Aquí después podemos hacer algo
-                # según la palabra seleccionada.
-                #
-                # Por ejemplo:
-                #
-                # if selected_word == "Ejercicio":
-                #     ...
-                #
-                # if selected_word == "Agua":
-                #     ...
-
+# =========================================================
+# ERROR DE ARCHIVO
+# =========================================================
 
 except IOError as error:
 
@@ -793,22 +949,32 @@ except IOError as error:
     )
 
 
+# =========================================================
+# CTRL + C
+# =========================================================
+
 except KeyboardInterrupt:
 
     logging.info(
         "ctrl + c"
     )
 
+
     flag_t = 0
 
+
     epd.sleep()
+
 
     time.sleep(
         2
     )
 
+
     t.join()
 
+
     epd.Dev_exit()
+
 
     sys.exit()

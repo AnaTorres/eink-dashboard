@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Ejercicio"
+  },
+  {
+    "id": 2,
+    "name": "Agua"
+  },
+  {
+    "id": 3,
+    "name": "Comida"
+  },
+  {
+    "id": 4,
+    "name": "Descanso"
+  },
+  {
+    "id": 5,
+    "name": "Peso"
+  },
+  {
+    "id": 6,
+    "name": "Pasos"
+  },
+  {
+    "id": 7,
+    "name": "Dormir"
+  }
+]
