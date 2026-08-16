@@ -257,7 +257,7 @@ def show_duration_screen(
     # Volver
     draw.text(
         (100, 220),
-        "↶",
+        "⏎",
         font=font15,
         fill=0
     )
