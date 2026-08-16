@@ -166,7 +166,7 @@ def show_activities(
     draw.text(
         (100, 60),
         "▶",
-        font=font16,
+        font=font15,
         fill=0
     )
 
