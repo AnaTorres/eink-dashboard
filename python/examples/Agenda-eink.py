@@ -4,17 +4,18 @@
 import sys
 import os
 import time
+import json
+import math
 import logging
 import threading
-import math
-import json
 
+from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 
-# ---------------------------------------------------------
-# Carpetas
-# ---------------------------------------------------------
+# =========================================================
+# RUTAS
+# =========================================================
 
 picdir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
@@ -35,9 +36,9 @@ if os.path.exists(libdir):
     sys.path.append(libdir)
 
 
-# ---------------------------------------------------------
-# Librerías Waveshare
-# ---------------------------------------------------------
+# =========================================================
+# LIBRERÍAS WAVESHARE
+# =========================================================
 
 from TP_lib import gt1151
 from TP_lib import epd2in13_V3
@@ -48,132 +49,191 @@ logging.basicConfig(level=logging.DEBUG)
 flag_t = 1
 
 
-# ---------------------------------------------------------
-# Archivo JSON
-# ---------------------------------------------------------
+# =========================================================
+# ARCHIVOS
+# =========================================================
 
-ITEMS_FILE = os.path.join(
+ACTIVITIES_FILE = os.path.join(
     picdir,
-    "words.json"
+    "activities.json"
+)
+
+RECORDS_FILE = os.path.join(
+    picdir,
+    "time_records.json"
 )
 
 
-# ---------------------------------------------------------
-# Cargar elementos desde JSON
-# ---------------------------------------------------------
+# =========================================================
+# PÁGINAS
+# =========================================================
 
-def Load_Items():
-    """
-    Lee los elementos desde words.json.
+PAGE_ACTIVITY_LIST = 0
+PAGE_DURATION = 1
 
-    Formato esperado:
 
-    [
-        {
-            "id": 1,
-            "name": "Ejercicio"
-        },
-        {
-            "id": 2,
-            "name": "Agua"
-        }
-    ]
-    """
+# =========================================================
+# CARGAR ACTIVIDADES
+# =========================================================
+
+def Load_Activities():
 
     try:
-        with open(ITEMS_FILE, "r", encoding="utf-8") as file:
+        with open(
+            ACTIVITIES_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
             data = json.load(file)
 
-        # Validar que el JSON contenga una lista
         if not isinstance(data, list):
-            print("ERROR: words.json debe contener una lista")
+            print("ERROR: activities.json debe contener una lista")
             return []
 
-        items = []
+        activities = []
 
         for item in data:
 
-            # Ignorar valores que no sean objetos
             if not isinstance(item, dict):
                 continue
 
-            # Ignorar elementos sin name
             if "name" not in item:
                 continue
 
-            name = str(item["name"]).strip()
+            name = str(
+                item["name"]
+            ).strip()
 
             if not name:
                 continue
 
-            items.append(item)
+            activities.append(item)
 
-        return items
+        return activities
 
     except FileNotFoundError:
-        print("ERROR: No se encontró el archivo:")
-        print(ITEMS_FILE)
+
+        print(
+            "ERROR: no se encontró:",
+            ACTIVITIES_FILE
+        )
 
         return []
 
     except json.JSONDecodeError as error:
-        print("ERROR: El archivo JSON no es válido")
-        print(error)
+
+        print(
+            "ERROR JSON:",
+            error
+        )
 
         return []
 
 
-# ---------------------------------------------------------
-# Hilo para detectar touch
-# ---------------------------------------------------------
+# =========================================================
+# GUARDAR REGISTRO DE TIEMPO
+# =========================================================
 
-def pthread_irq():
+def Save_Time_Record(activity, minutes):
 
-    print("pthread running")
+    now = datetime.now()
 
-    while flag_t == 1:
-
-        if gt.digital_read(gt.INT) == 0:
-            GT_Dev.Touch = 1
-        else:
-            GT_Dev.Touch = 0
-
-        time.sleep(0.01)
-
-    print("thread: exit")
-
-
-# ---------------------------------------------------------
-# Leer imagen BMP
-# ---------------------------------------------------------
-
-def Read_BMP(image, filename, x, y):
-
-    newimage = Image.open(
-        os.path.join(
-            picdir,
-            filename
+    record = {
+        "activity_id": activity.get("id"),
+        "activity_name": activity.get("name"),
+        "minutes": minutes,
+        "date": now.strftime("%Y-%m-%d"),
+        "created_at": now.isoformat(
+            timespec="seconds"
         )
-    ).convert("1")
+    }
 
-    image.paste(
-        newimage,
-        (x, y)
+    try:
+
+        with open(
+            RECORDS_FILE,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            records = json.load(file)
+
+        if not isinstance(records, list):
+            records = []
+
+    except (
+        FileNotFoundError,
+        json.JSONDecodeError
+    ):
+
+        records = []
+
+
+    records.append(
+        record
     )
 
 
-# ---------------------------------------------------------
-# Crear texto vertical
-# ---------------------------------------------------------
+    with open(
+        RECORDS_FILE,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        json.dump(
+            records,
+            file,
+            ensure_ascii=False,
+            indent=2
+        )
+
+
+    print("")
+    print("-----------------------")
+    print("REGISTRO GUARDADO")
+    print("Actividad:", activity.get("name"))
+    print("Minutos:", minutes)
+    print("-----------------------")
+    print("")
+
+
+# =========================================================
+# TOUCH THREAD
+# =========================================================
+
+def pthread_irq():
+
+    print(
+        "pthread running"
+    )
+
+    while flag_t == 1:
+
+        if gt.digital_read(
+            gt.INT
+        ) == 0:
+
+            GT_Dev.Touch = 1
+
+        else:
+
+            GT_Dev.Touch = 0
+
+        time.sleep(
+            0.01
+        )
+
+    print(
+        "thread exit"
+    )
+
+
+# =========================================================
+# CREAR PALABRA VERTICAL
+# =========================================================
 
 def Create_Vertical_Word(text):
-    """
-    Crea una palabra en una imagen de 122 x 43
-    y después la rota 90 grados.
-
-    Resultado final:
-        43 x 122
-    """
 
     word_image = Image.new(
         "1",
@@ -207,125 +267,90 @@ def Create_Vertical_Word(text):
         43 - text_height
     ) // 2
 
+
     word_draw.text(
-        (text_x, text_y),
+        (
+            text_x,
+            text_y
+        ),
         text,
         font=font15,
         fill=0
     )
 
-    word_image = word_image.rotate(
+
+    return word_image.rotate(
         90,
         expand=True
     )
 
-    return word_image
 
-
-# ---------------------------------------------------------
-# Calcular total de páginas
-# ---------------------------------------------------------
+# =========================================================
+# TOTAL DE PÁGINAS
+# =========================================================
 
 def Get_Total_Pages():
-    """
-    Cada página muestra cuatro elementos.
-    """
 
-    if len(Items) == 0:
+    if len(Activities) == 0:
         return 1
 
     return math.ceil(
-        len(Items) / 4
+        len(Activities) / 4
     )
 
 
-# ---------------------------------------------------------
-# Mostrar una página de palabras
-# ---------------------------------------------------------
+# =========================================================
+# MOSTRAR LISTA DE ACTIVIDADES
+# =========================================================
 
-def Show_Items(image, page):
-    """
-    Muestra máximo cuatro elementos por página.
+def Show_Activities(image, page):
 
-    Ejemplo:
-
-    Página 0:
-        Items 0 - 3
-
-    Página 1:
-        Items 4 - 7
-
-    Página 2:
-        Items 8 - 11
-    """
-
-    # -----------------------------------------------------
-    # Cargar fondo
-    # -----------------------------------------------------
-
-    Read_BMP(
-        image,
-        "Photo_1.bmp",
-        0,
-        0
-    )
-
-
-    # -----------------------------------------------------
-    # Limpiar zona donde aparecen las palabras
-    # -----------------------------------------------------
-
+    # Limpiar pantalla
     draw = ImageDraw.Draw(
         image
     )
 
     draw.rectangle(
-        (2, 2, 90, 248),
+        (0, 0, 121, 249),
         fill=255
     )
 
-
-    # -----------------------------------------------------
-    # Primer elemento de esta página
-    # -----------------------------------------------------
 
     first_index = (
         page * 4
     )
 
 
-    # -----------------------------------------------------
-    # Máximo cuatro elementos
-    # -----------------------------------------------------
-
     for position in range(4):
 
-        item_index = (
+        activity_index = (
             first_index
             + position
         )
 
 
-        if item_index >= len(Items):
+        if activity_index >= len(Activities):
             continue
 
 
-        # -------------------------------------------------
-        # Obtener nombre
-        # -------------------------------------------------
+        activity = (
+            Activities[
+                activity_index
+            ]
+        )
 
         text = str(
-            Items[item_index]["name"]
+            activity["name"]
         )
 
 
-        # -------------------------------------------------
-        # Calcular posición en pantalla
-        # -------------------------------------------------
+        column = (
+            position // 2
+        )
 
-        column = position // 2
-
-        row = position % 2
+        row = (
+            position % 2
+        )
 
 
         x = (
@@ -339,18 +364,12 @@ def Show_Items(image, page):
         )
 
 
-        # -------------------------------------------------
-        # Crear palabra
-        # -------------------------------------------------
-
-        word_image = Create_Vertical_Word(
-            text
+        word_image = (
+            Create_Vertical_Word(
+                text
+            )
         )
 
-
-        # -------------------------------------------------
-        # Pegar palabra
-        # -------------------------------------------------
 
         image.paste(
             word_image,
@@ -358,24 +377,60 @@ def Show_Items(image, page):
         )
 
 
-# ---------------------------------------------------------
-# Detectar qué elemento se tocó
-# ---------------------------------------------------------
+    # -----------------------------------------------------
+    # Dibujar zona lateral
+    # -----------------------------------------------------
 
-def Get_Selected_Item(
+    draw = ImageDraw.Draw(
+        image
+    )
+
+
+    # NEXT
+    draw.text(
+        (100, 60),
+        ">",
+        font=font15,
+        fill=0
+    )
+
+
+    # HOME / FIRST PAGE
+    draw.text(
+        (100, 115),
+        "H",
+        font=font15,
+        fill=0
+    )
+
+
+    # PREVIOUS
+    draw.text(
+        (100, 170),
+        "<",
+        font=font15,
+        fill=0
+    )
+
+
+    # REFRESH
+    draw.text(
+        (100, 220),
+        "R",
+        font=font15,
+        fill=0
+    )
+
+
+# =========================================================
+# OBTENER ACTIVIDAD TOCADA
+# =========================================================
+
+def Get_Selected_Activity(
     touch_x,
     touch_y,
     page
 ):
-
-    """
-    Convierte las coordenadas táctiles
-    en el índice correspondiente de Items.
-    """
-
-    # -----------------------------------------------------
-    # Columna
-    # -----------------------------------------------------
 
     if touch_x < 46:
         column = 0
@@ -383,19 +438,11 @@ def Get_Selected_Item(
         column = 1
 
 
-    # -----------------------------------------------------
-    # Fila
-    # -----------------------------------------------------
-
     if touch_y < 124:
         row = 0
     else:
         row = 1
 
-
-    # -----------------------------------------------------
-    # Posición dentro de la página
-    # -----------------------------------------------------
 
     position = (
         column * 2
@@ -403,52 +450,196 @@ def Get_Selected_Item(
     )
 
 
-    # -----------------------------------------------------
-    # Índice dentro de Items
-    # -----------------------------------------------------
-
-    item_index = (
+    activity_index = (
         page * 4
         + position
     )
 
 
-    if item_index >= len(Items):
+    if activity_index >= len(
+        Activities
+    ):
         return None
 
 
-    return item_index
+    return Activities[
+        activity_index
+    ]
 
 
-# ---------------------------------------------------------
-# Mostrar información del elemento seleccionado
-# ---------------------------------------------------------
+# =========================================================
+# MOSTRAR PANTALLA DE DURACIÓN
+# =========================================================
 
-def On_Item_Selected(item):
-    """
-    Esta función se ejecuta cuando el usuario
-    toca una palabra.
+def Show_Duration_Screen(
+    image,
+    activity,
+    minutes
+):
 
-    Aquí podrás añadir después:
-    - guardar algo en DB
-    - cambiar de pantalla
-    - ejecutar una acción
-    - llamar a una API
-    """
-
-    print("------------------------")
-
-    print(
-        "ID:",
-        item.get("id")
+    draw = ImageDraw.Draw(
+        image
     )
 
-    print(
-        "Nombre:",
-        item.get("name")
+
+    # Limpiar pantalla
+    draw.rectangle(
+        (0, 0, 121, 249),
+        fill=255
     )
 
-    print("------------------------")
+
+    # -----------------------------------------------------
+    # Crear nombre vertical
+    # -----------------------------------------------------
+
+    activity_image = Image.new(
+        "1",
+        (200, 30),
+        255
+    )
+
+    activity_draw = ImageDraw.Draw(
+        activity_image
+    )
+
+
+    name = str(
+        activity["name"]
+    )
+
+
+    bbox = activity_draw.textbbox(
+        (0, 0),
+        name,
+        font=font15
+    )
+
+
+    width = (
+        bbox[2] - bbox[0]
+    )
+
+
+    activity_draw.text(
+        (
+            (200 - width) // 2,
+            5
+        ),
+        name,
+        font=font15,
+        fill=0
+    )
+
+
+    activity_image = (
+        activity_image.rotate(
+            90,
+            expand=True
+        )
+    )
+
+
+    image.paste(
+        activity_image,
+        (5, 25)
+    )
+
+
+    # -----------------------------------------------------
+    # Minutos
+    # -----------------------------------------------------
+
+    minutes_text = (
+        str(minutes)
+        + " min"
+    )
+
+
+    time_image = Image.new(
+        "1",
+        (100, 35),
+        255
+    )
+
+    time_draw = ImageDraw.Draw(
+        time_image
+    )
+
+
+    bbox = time_draw.textbbox(
+        (0, 0),
+        minutes_text,
+        font=font24
+    )
+
+
+    width = (
+        bbox[2] - bbox[0]
+    )
+
+
+    time_draw.text(
+        (
+            (100 - width) // 2,
+            3
+        ),
+        minutes_text,
+        font=font24,
+        fill=0
+    )
+
+
+    time_image = (
+        time_image.rotate(
+            90,
+            expand=True
+        )
+    )
+
+
+    image.paste(
+        time_image,
+        (50, 75)
+    )
+
+
+    # -----------------------------------------------------
+    # Botones laterales
+    #
+    # Y 57    -> +15
+    # Y 113   -> GUARDAR
+    # Y 169   -> -15
+    # Y 220   -> VOLVER
+    # -----------------------------------------------------
+
+    draw.text(
+        (100, 60),
+        "+",
+        font=font24,
+        fill=0
+    )
+
+    draw.text(
+        (100, 115),
+        "S",
+        font=font15,
+        fill=0
+    )
+
+    draw.text(
+        (100, 170),
+        "-",
+        font=font24,
+        fill=0
+    )
+
+    draw.text(
+        (100, 220),
+        "B",
+        font=font15,
+        fill=0
+    )
 
 
 # =========================================================
@@ -458,7 +649,7 @@ def On_Item_Selected(item):
 try:
 
     logging.info(
-        "epd2in13_V3 JSON Menu"
+        "Activity Time Tracker"
     )
 
 
@@ -466,29 +657,33 @@ try:
     # Inicializar pantalla
     # -----------------------------------------------------
 
-    epd = epd2in13_V3.EPD()
+    epd = (
+        epd2in13_V3.EPD()
+    )
 
 
-    # -----------------------------------------------------
-    # Inicializar touch
-    # -----------------------------------------------------
-
-    gt = gt1151.GT1151()
-
-    GT_Dev = gt1151.GT_Development()
-
-    GT_Old = gt1151.GT_Development()
+    gt = (
+        gt1151.GT1151()
+    )
 
 
-    # -----------------------------------------------------
-    # Inicialización completa
-    # -----------------------------------------------------
+    GT_Dev = (
+        gt1151.GT_Development()
+    )
+
+
+    GT_Old = (
+        gt1151.GT_Development()
+    )
+
 
     epd.init(
         epd.FULL_UPDATE
     )
 
+
     gt.GT_Init()
+
 
     epd.Clear(
         0xFF
@@ -496,12 +691,13 @@ try:
 
 
     # -----------------------------------------------------
-    # Iniciar thread táctil
+    # Thread touch
     # -----------------------------------------------------
 
     t = threading.Thread(
         target=pthread_irq
     )
+
 
     t.daemon = True
 
@@ -509,94 +705,88 @@ try:
 
 
     # -----------------------------------------------------
-    # Fuente
+    # Fuentes
     # -----------------------------------------------------
 
-    font15 = ImageFont.truetype(
-        os.path.join(
-            fontdir,
-            "Font.ttc"
-        ),
-        15
-    )
-
-
-    # -----------------------------------------------------
-    # Cargar Items desde JSON
-    # -----------------------------------------------------
-
-    Items = Load_Items()
-
-
-    print("")
-    print("------------------------")
-    print("Elementos cargados")
-    print("------------------------")
-
-
-    for item in Items:
-
-        print(
-            item.get("id"),
-            "-",
-            item.get("name")
+    font15 = (
+        ImageFont.truetype(
+            os.path.join(
+                fontdir,
+                "Font.ttc"
+            ),
+            15
         )
-
-
-    print("------------------------")
-    print("")
-
-
-    # -----------------------------------------------------
-    # Calcular páginas
-    # -----------------------------------------------------
-
-    Total_Pages = Get_Total_Pages()
-
-
-    print(
-        "Total elementos:",
-        len(Items)
     )
 
+
+    font24 = (
+        ImageFont.truetype(
+            os.path.join(
+                fontdir,
+                "Font.ttc"
+            ),
+            24
+        )
+    )
+
+
+    # -----------------------------------------------------
+    # Cargar actividades
+    # -----------------------------------------------------
+
+    Activities = (
+        Load_Activities()
+    )
+
+
+    Total_Pages = (
+        Get_Total_Pages()
+    )
+
+
     print(
-        "Total páginas:",
+        "Actividades:",
+        len(Activities)
+    )
+
+
+    print(
+        "Páginas:",
         Total_Pages
     )
 
 
     # -----------------------------------------------------
-    # Página actual
+    # Estado
     # -----------------------------------------------------
 
     Current_Page = 0
 
+    Current_Screen = (
+        PAGE_ACTIVITY_LIST
+    )
 
-    # -----------------------------------------------------
-    # Crear imagen inicial
-    # -----------------------------------------------------
+    Selected_Activity = None
 
-    image = Image.open(
-        os.path.join(
-            picdir,
-            "Photo_1.bmp"
-        )
-    ).convert("1")
+    Selected_Minutes = 30
 
 
     # -----------------------------------------------------
-    # Mostrar primera página
+    # Imagen base
     # -----------------------------------------------------
 
-    Show_Items(
+    image = Image.new(
+        "1",
+        (122, 250),
+        255
+    )
+
+
+    Show_Activities(
         image,
         Current_Page
     )
 
-
-    # -----------------------------------------------------
-    # Mostrar en pantalla
-    # -----------------------------------------------------
 
     epd.displayPartBaseImage(
         epd.getbuffer(
@@ -610,10 +800,6 @@ try:
     )
 
 
-    # -----------------------------------------------------
-    # Variables de refresh
-    # -----------------------------------------------------
-
     Refresh_Count = 0
 
     ReFlag = 0
@@ -622,7 +808,7 @@ try:
 
 
     # =====================================================
-    # LOOP PRINCIPAL
+    # LOOP
     # =====================================================
 
     while True:
@@ -640,13 +826,10 @@ try:
                 )
             )
 
+
             Refresh_Count += 1
 
             ReFlag = 0
-
-            print(
-                "*** Screen refresh ***"
-            )
 
 
         # -------------------------------------------------
@@ -654,7 +837,7 @@ try:
         # -------------------------------------------------
 
         elif (
-            Refresh_Count > 50
+            Refresh_Count > 40
             or SelfFlag == 1
         ):
 
@@ -680,13 +863,8 @@ try:
             )
 
 
-            print(
-                "--- Full refresh ---"
-            )
-
-
         # -------------------------------------------------
-        # Leer touch
+        # Leer Touch
         # -------------------------------------------------
 
         gt.GT_Scan(
@@ -695,24 +873,23 @@ try:
         )
 
 
-        # -------------------------------------------------
-        # Ignorar si no cambió
-        # -------------------------------------------------
-
         if (
-            GT_Old.X[0] == GT_Dev.X[0]
+            GT_Old.X[0]
+            == GT_Dev.X[0]
+
             and
-            GT_Old.Y[0] == GT_Dev.Y[0]
+
+            GT_Old.Y[0]
+            == GT_Dev.Y[0]
+
             and
-            GT_Old.S[0] == GT_Dev.S[0]
+
+            GT_Old.S[0]
+            == GT_Dev.S[0]
         ):
 
             continue
 
-
-        # -------------------------------------------------
-        # Si no existe touch
-        # -------------------------------------------------
 
         if not GT_Dev.TouchpointFlag:
 
@@ -722,9 +899,13 @@ try:
         GT_Dev.TouchpointFlag = 0
 
 
-        touch_x = GT_Dev.X[0]
+        touch_x = (
+            GT_Dev.X[0]
+        )
 
-        touch_y = GT_Dev.Y[0]
+        touch_y = (
+            GT_Dev.Y[0]
+        )
 
 
         print(
@@ -735,211 +916,344 @@ try:
 
 
         # =================================================
-        # BOTÓN NEXT
+        # LISTA DE ACTIVIDADES
         # =================================================
 
         if (
-            touch_x > 97
-            and touch_x < 119
-            and
-            touch_y > 57
-            and touch_y < 78
+            Current_Screen
+            == PAGE_ACTIVITY_LIST
         ):
 
-            Current_Page += 1
+
+            # ---------------------------------------------
+            # NEXT
+            # ---------------------------------------------
+
+            if (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 57
+                and touch_y < 78
+            ):
+
+                Current_Page += 1
 
 
-            if Current_Page >= Total_Pages:
+                if (
+                    Current_Page
+                    >= Total_Pages
+                ):
+
+                    Current_Page = 0
+
+
+                Show_Activities(
+                    image,
+                    Current_Page
+                )
+
+
+                ReFlag = 1
+
+
+            # ---------------------------------------------
+            # PRIMERA PÁGINA
+            # ---------------------------------------------
+
+            elif (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 113
+                and touch_y < 136
+            ):
 
                 Current_Page = 0
 
 
-            print(
-                "Next page:",
-                Current_Page + 1,
-                "/",
-                Total_Pages
-            )
-
-
-            Show_Items(
-                image,
-                Current_Page
-            )
-
-
-            ReFlag = 1
-
-
-        # =================================================
-        # BOTÓN HOME
-        #
-        # Vuelve a la primera página
-        # =================================================
-
-        elif (
-            touch_x > 97
-            and touch_x < 119
-            and
-            touch_y > 113
-            and touch_y < 136
-        ):
-
-            Current_Page = 0
-
-
-            print(
-                "First page"
-            )
-
-
-            Show_Items(
-                image,
-                Current_Page
-            )
-
-
-            ReFlag = 1
-
-
-        # =================================================
-        # BOTÓN PREVIOUS
-        # =================================================
-
-        elif (
-            touch_x > 97
-            and touch_x < 119
-            and
-            touch_y > 169
-            and touch_y < 190
-        ):
-
-            Current_Page -= 1
-
-
-            if Current_Page < 0:
-
-                Current_Page = (
-                    Total_Pages - 1
+                Show_Activities(
+                    image,
+                    Current_Page
                 )
 
 
-            print(
-                "Previous page:",
-                Current_Page + 1,
-                "/",
-                Total_Pages
-            )
-
-
-            Show_Items(
-                image,
-                Current_Page
-            )
-
-
-            ReFlag = 1
-
-
-        # =================================================
-        # BOTÓN REFRESH
-        # =================================================
-
-        elif (
-            touch_x > 97
-            and touch_x < 119
-            and
-            touch_y > 220
-            and touch_y < 242
-        ):
-
-            print(
-                "Reload JSON"
-            )
+                ReFlag = 1
 
 
             # ---------------------------------------------
-            # Volver a leer words.json
+            # PREVIOUS
             # ---------------------------------------------
 
-            Items = Load_Items()
+            elif (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 169
+                and touch_y < 190
+            ):
+
+                Current_Page -= 1
 
 
-            # ---------------------------------------------
-            # Recalcular páginas
-            # ---------------------------------------------
+                if Current_Page < 0:
 
-            Total_Pages = Get_Total_Pages()
-
-
-            print(
-                "Total elementos:",
-                len(Items)
-            )
-
-            print(
-                "Total páginas:",
-                Total_Pages
-            )
+                    Current_Page = (
+                        Total_Pages - 1
+                    )
 
 
-            # ---------------------------------------------
-            # Si la página actual ya no existe
-            # ---------------------------------------------
-
-            if Current_Page >= Total_Pages:
-
-                Current_Page = 0
-
-
-            # ---------------------------------------------
-            # Mostrar nuevos datos
-            # ---------------------------------------------
-
-            Show_Items(
-                image,
-                Current_Page
-            )
-
-
-            SelfFlag = 1
-
-            ReFlag = 1
-
-
-        # =================================================
-        # SELECCIONAR PALABRA
-        # =================================================
-
-        elif (
-            touch_x > 2
-            and touch_x < 90
-            and
-            touch_y > 2
-            and touch_y < 248
-        ):
-
-            selected_index = Get_Selected_Item(
-                touch_x,
-                touch_y,
-                Current_Page
-            )
-
-
-            if selected_index is not None:
-
-                selected_item = (
-                    Items[selected_index]
+                Show_Activities(
+                    image,
+                    Current_Page
                 )
 
 
-                On_Item_Selected(
-                    selected_item
+                ReFlag = 1
+
+
+            # ---------------------------------------------
+            # REFRESH ACTIVIDADES
+            # ---------------------------------------------
+
+            elif (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 220
+                and touch_y < 242
+            ):
+
+                Activities = (
+                    Load_Activities()
                 )
+
+
+                Total_Pages = (
+                    Get_Total_Pages()
+                )
+
+
+                if (
+                    Current_Page
+                    >= Total_Pages
+                ):
+
+                    Current_Page = 0
+
+
+                Show_Activities(
+                    image,
+                    Current_Page
+                )
+
+
+                SelfFlag = 1
+
+                ReFlag = 1
+
+
+            # ---------------------------------------------
+            # SELECCIONAR ACTIVIDAD
+            # ---------------------------------------------
+
+            elif (
+                touch_x > 2
+                and touch_x < 90
+
+                and
+
+                touch_y > 2
+                and touch_y < 248
+            ):
+
+                Selected_Activity = (
+                    Get_Selected_Activity(
+                        touch_x,
+                        touch_y,
+                        Current_Page
+                    )
+                )
+
+
+                if (
+                    Selected_Activity
+                    is not None
+                ):
+
+                    print(
+                        "Seleccionada:",
+                        Selected_Activity[
+                            "name"
+                        ]
+                    )
+
+
+                    Selected_Minutes = 30
+
+
+                    Current_Screen = (
+                        PAGE_DURATION
+                    )
+
+
+                    Show_Duration_Screen(
+                        image,
+                        Selected_Activity,
+                        Selected_Minutes
+                    )
+
+
+                    ReFlag = 1
+
+
+        # =================================================
+        # SELECCIÓN DE DURACIÓN
+        # =================================================
+
+        elif (
+            Current_Screen
+            == PAGE_DURATION
+        ):
+
+
+            # ---------------------------------------------
+            # +15 MIN
+            # ---------------------------------------------
+
+            if (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 57
+                and touch_y < 78
+            ):
+
+                Selected_Minutes += 15
+
+
+                Show_Duration_Screen(
+                    image,
+                    Selected_Activity,
+                    Selected_Minutes
+                )
+
+
+                ReFlag = 1
+
+
+            # ---------------------------------------------
+            # GUARDAR
+            # ---------------------------------------------
+
+            elif (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 113
+                and touch_y < 136
+            ):
+
+                Save_Time_Record(
+                    Selected_Activity,
+                    Selected_Minutes
+                )
+
+
+                Current_Screen = (
+                    PAGE_ACTIVITY_LIST
+                )
+
+
+                Selected_Activity = None
+
+
+                Show_Activities(
+                    image,
+                    Current_Page
+                )
+
+
+                ReFlag = 1
+
+
+            # ---------------------------------------------
+            # -15 MIN
+            # ---------------------------------------------
+
+            elif (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 169
+                and touch_y < 190
+            ):
+
+                Selected_Minutes -= 15
+
+
+                if Selected_Minutes < 15:
+
+                    Selected_Minutes = 15
+
+
+                Show_Duration_Screen(
+                    image,
+                    Selected_Activity,
+                    Selected_Minutes
+                )
+
+
+                ReFlag = 1
+
+
+            # ---------------------------------------------
+            # VOLVER SIN GUARDAR
+            # ---------------------------------------------
+
+            elif (
+                touch_x > 97
+                and touch_x < 119
+
+                and
+
+                touch_y > 220
+                and touch_y < 242
+            ):
+
+                Current_Screen = (
+                    PAGE_ACTIVITY_LIST
+                )
+
+
+                Selected_Activity = None
+
+
+                Show_Activities(
+                    image,
+                    Current_Page
+                )
+
+
+                ReFlag = 1
 
 
 # =========================================================
-# ERROR DE ARCHIVO
+# ERRORES
 # =========================================================
 
 except IOError as error:
@@ -948,10 +1262,6 @@ except IOError as error:
         error
     )
 
-
-# =========================================================
-# CTRL + C
-# =========================================================
 
 except KeyboardInterrupt:
 
