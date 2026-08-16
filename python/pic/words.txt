@@ -1,0 +1,10 @@
+Ejercicio
+Agua
+Comida
+Descanso
+Peso
+Pasos
+Dormir
+Caminar
+Leer
+Trabajo

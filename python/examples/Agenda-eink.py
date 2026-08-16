@@ -6,6 +6,7 @@ import os
 import time
 import logging
 import threading
+import math
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -47,55 +48,61 @@ flag_t = 1
 
 
 # ---------------------------------------------------------
-# Palabras del menú
+# Archivo donde están las palabras
 # ---------------------------------------------------------
 
-Words_S = [
-    "Ejercicio",
-    "Estudio",
-    "Organizacion",
-    "Descanso",
-    "Peso",
-    "Pasos",
-]
+WORDS_FILE = os.path.join(
+    picdir,
+    "words.txt"
+)
 
 
 # ---------------------------------------------------------
-# Imágenes grandes asociadas a cada palabra
+# Cargar palabras desde archivo
 # ---------------------------------------------------------
 
-PhotoPath_L = [
-    "Photo_2_0.bmp",
-    "Photo_2_1.bmp",
-    "Photo_2_2.bmp",
-    "Photo_2_3.bmp",
-    "Photo_2_4.bmp",
-    "Photo_2_5.bmp",
-    "Photo_2_6.bmp",
-]
+def Load_Words():
+    """
+    Lee words.txt.
+
+    Cada línea representa una palabra.
+
+    Ejemplo:
+
+    Ejercicio
+    Agua
+    Comida
+    Descanso
+    """
+
+    words = []
+
+    try:
+        with open(WORDS_FILE, "r", encoding="utf-8") as file:
+            for line in file:
+                word = line.strip()
+
+                # Ignorar líneas vacías
+                if word:
+                    words.append(word)
+
+    except FileNotFoundError:
+        print("ERROR: No se encontró:")
+        print(WORDS_FILE)
+
+    return words
 
 
 # ---------------------------------------------------------
-# Páginas
-#
-# Page 0 = lista de palabras
-# Page 1 = imagen grande
-# ---------------------------------------------------------
-
-PagePath = [
-    "Photo_1.bmp",
-    "Photo_2.bmp",
-]
-
-
-# ---------------------------------------------------------
-# Lectura del controlador táctil
+# Touch thread
 # ---------------------------------------------------------
 
 def pthread_irq():
+
     print("pthread running")
 
     while flag_t == 1:
+
         if gt.digital_read(gt.INT) == 0:
             GT_Dev.Touch = 1
         else:
@@ -107,15 +114,22 @@ def pthread_irq():
 
 
 # ---------------------------------------------------------
-# Abrir y pegar una imagen BMP
+# Leer una imagen BMP
 # ---------------------------------------------------------
 
 def Read_BMP(image, filename, x, y):
+
     newimage = Image.open(
-        os.path.join(picdir, filename)
+        os.path.join(
+            picdir,
+            filename
+        )
     ).convert("1")
 
-    image.paste(newimage, (x, y))
+    image.paste(
+        newimage,
+        (x, y)
+    )
 
 
 # ---------------------------------------------------------
@@ -123,11 +137,16 @@ def Read_BMP(image, filename, x, y):
 # ---------------------------------------------------------
 
 def Create_Vertical_Word(text):
-    """
-    Crea una palabra horizontal en una imagen de 122 x 43
-    y después la rota 90 grados.
 
-    El resultado final mide 43 x 122 píxeles.
+    """
+    Crea una imagen horizontal de 122 x 43.
+
+    Escribe la palabra centrada.
+
+    Después rota la imagen 90 grados.
+
+    Resultado:
+        43 x 122
     """
 
     word_image = Image.new(
@@ -136,7 +155,9 @@ def Create_Vertical_Word(text):
         255
     )
 
-    word_draw = ImageDraw.Draw(word_image)
+    word_draw = ImageDraw.Draw(
+        word_image
+    )
 
     bbox = word_draw.textbbox(
         (0, 0),
@@ -144,11 +165,21 @@ def Create_Vertical_Word(text):
         font=font15
     )
 
-    text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
+    text_width = (
+        bbox[2] - bbox[0]
+    )
 
-    text_x = (122 - text_width) // 2
-    text_y = (43 - text_height) // 2
+    text_height = (
+        bbox[3] - bbox[1]
+    )
+
+    text_x = (
+        122 - text_width
+    ) // 2
+
+    text_y = (
+        43 - text_height
+    ) // 2
 
     word_draw.text(
         (text_x, text_y),
@@ -157,50 +188,96 @@ def Create_Vertical_Word(text):
         fill=0
     )
 
-    return word_image.rotate(
+    word_image = word_image.rotate(
         90,
         expand=True
     )
 
+    return word_image
+
 
 # ---------------------------------------------------------
-# Mostrar palabras 
+# Número de páginas
 # ---------------------------------------------------------
 
-def Show_words(image, page):
+def Get_Total_Pages():
+
     """
-    Muestra cuatro palabras por página.
+    Cada página muestra 4 palabras.
+    """
+
+    if len(Words_S) == 0:
+        return 1
+
+    return math.ceil(
+        len(Words_S) / 4
+    )
+
+
+# ---------------------------------------------------------
+# Mostrar palabras
+# ---------------------------------------------------------
+
+def Show_Words(image, page):
+
+    """
+    Muestra máximo 4 palabras por página.
 
     Página 0:
-        Ejercicio
-        Agua
-        Comida
-        Descanso
+        palabras 0 - 3
 
     Página 1:
-        Comida
-        Descanso
-        Peso
-        Pasos
+        palabras 4 - 7
 
     Página 2:
-        Peso
-        Pasos
+        palabras 8 - 11
+
+    etc.
     """
 
-    first_index = page * 2
+    # -----------------------------------------------------
+    # Primero cargar el fondo con los botones
+    # -----------------------------------------------------
 
-    draw = ImageDraw.Draw(image)
+    Read_BMP(
+        image,
+        "Photo_1.bmp",
+        0,
+        0
+    )
 
-    # Limpiar solamente la zona de palabras.
-    # La barra lateral de botones se conserva.
+    # -----------------------------------------------------
+    # Limpiar zona donde aparecen las palabras
+    # -----------------------------------------------------
+
+    draw = ImageDraw.Draw(
+        image
+    )
+
     draw.rectangle(
         (2, 2, 90, 248),
         fill=255
     )
 
+    # Primera palabra de esta página
+    first_index = page * 4
+
+    # -----------------------------------------------------
+    # Mostrar máximo cuatro palabras
+    # -----------------------------------------------------
+
     for position in range(4):
-        word_index = first_index + position
+
+        word_index = (
+            first_index + position
+        )
+
+        if word_index >= len(Words_S):
+            continue
+
+        # -----------------------------------------------
+        # Calcular posición
+        # -----------------------------------------------
 
         column = position // 2
         row = position % 2
@@ -208,18 +285,17 @@ def Show_words(image, page):
         x = column * 45 + 2
         y = row * 124 + 2
 
-        # Limpiar el espacio de la palabra
-        draw.rectangle(
-            (x, y, x + 42, y + 121),
-            fill=255
-        )
-
-        if word_index >= len(Words_S):
-            continue
+        # -----------------------------------------------
+        # Crear palabra
+        # -----------------------------------------------
 
         word_image = Create_Vertical_Word(
             Words_S[word_index]
         )
+
+        # -----------------------------------------------
+        # Pegar palabra
+        # -----------------------------------------------
 
         image.paste(
             word_image,
@@ -228,78 +304,46 @@ def Show_words(image, page):
 
 
 # ---------------------------------------------------------
-# Mostrar la página de palabras
+# Saber qué palabra se tocó
 # ---------------------------------------------------------
 
-def Show_Words_Page(image, words_page):
-    Read_BMP(
-        image,
-        PagePath[0],
-        0,
-        0
-    )
+def Get_Selected_Word(
+    touch_x,
+    touch_y,
+    page
+):
 
-    Show_words(
-        image,
-        words_page
-    )
-
-
-# ---------------------------------------------------------
-# Mostrar una imagen grande
-# ---------------------------------------------------------
-
-def Show_Photo_Large(image, large):
-    if large < 1 or large > 6:
-        large = 1
-
-    newimage = Image.open(
-        os.path.join(
-            picdir,
-            PhotoPath_L[large]
-        )
-    ).convert("1")
-
-    image.paste(
-        newimage,
-        (2, 2)
-    )
-
-
-# ---------------------------------------------------------
-# Obtener la palabra seleccionada
-# ---------------------------------------------------------
-
-def Get_Selected_Item(touch_x, touch_y, words_page):
     """
-    Convierte la posición tocada en un elemento de la lista.
-
-    Distribución:
-
-        superior izquierda
-        inferior izquierda
-        superior derecha
-        inferior derecha
+    Convierte coordenadas táctiles en índice
+    de una palabra.
     """
 
+    # Zona izquierda/derecha
     if touch_x < 46:
         column = 0
     else:
         column = 1
 
+    # Zona superior/inferior
     if touch_y < 124:
         row = 0
     else:
         row = 1
 
-    position = column * 2 + row
+    position = (
+        column * 2
+        + row
+    )
 
-    item_index = words_page * 2 + position
+    word_index = (
+        page * 4
+        + position
+    )
 
-    if item_index >= len(Words_S):
+    if word_index >= len(Words_S):
         return None
 
-    return item_index + 1
+    return word_index
 
 
 # ---------------------------------------------------------
@@ -307,105 +351,205 @@ def Get_Selected_Item(touch_x, touch_y, words_page):
 # ---------------------------------------------------------
 
 try:
-    logging.info("epd2in13_V3 Touch Demo")
+
+    logging.info(
+        "epd2in13_V3 Dynamic Words"
+    )
+
+
+    # -----------------------------------------------------
+    # Inicializar pantalla y touch
+    # -----------------------------------------------------
 
     epd = epd2in13_V3.EPD()
+
     gt = gt1151.GT1151()
 
     GT_Dev = gt1151.GT_Development()
+
     GT_Old = gt1151.GT_Development()
 
-    logging.info("init and clear")
 
-    epd.init(epd.FULL_UPDATE)
+    epd.init(
+        epd.FULL_UPDATE
+    )
+
     gt.GT_Init()
-    epd.Clear(0xFF)
 
-    # Iniciar hilo táctil
+    epd.Clear(
+        0xFF
+    )
+
+
+    # -----------------------------------------------------
+    # Thread táctil
+    # -----------------------------------------------------
+
     t = threading.Thread(
         target=pthread_irq
     )
 
     t.daemon = True
+
     t.start()
 
-    # Fuentes
+
+    # -----------------------------------------------------
+    # Fuente
+    # -----------------------------------------------------
+
     font15 = ImageFont.truetype(
-        os.path.join(fontdir, "Font.ttc"),
+        os.path.join(
+            fontdir,
+            "Font.ttc"
+        ),
         15
     )
 
-    font24 = ImageFont.truetype(
-        os.path.join(fontdir, "Font.ttc"),
-        24
+
+    # -----------------------------------------------------
+    # Leer palabras desde archivo
+    # -----------------------------------------------------
+
+    Words_S = Load_Words()
+
+
+    print("")
+    print("Palabras cargadas:")
+    print(Words_S)
+    print("")
+
+
+    # -----------------------------------------------------
+    # Número de páginas
+    # -----------------------------------------------------
+
+    Total_Pages = Get_Total_Pages()
+
+
+    print(
+        "Total palabras:",
+        len(Words_S)
     )
 
+    print(
+        "Total páginas:",
+        Total_Pages
+    )
+
+
     # -----------------------------------------------------
-    # Empezar directamente en la lista de palabras
+    # Página inicial
     # -----------------------------------------------------
 
-    Page = 0
-    Photo_S = 0
-    Photo_L = 1
+    Current_Page = 0
+
+
+    # -----------------------------------------------------
+    # Crear imagen inicial
+    # -----------------------------------------------------
 
     image = Image.open(
         os.path.join(
             picdir,
-            PagePath[0]
+            "Photo_1.bmp"
         )
     ).convert("1")
 
-    Show_words(
+
+    # Dibujar primera página
+    Show_Words(
         image,
-        Photo_S
+        Current_Page
     )
 
+
+    # Mostrar pantalla
     epd.displayPartBaseImage(
-        epd.getbuffer(image)
+        epd.getbuffer(
+            image
+        )
     )
 
-    epd.init(epd.PART_UPDATE)
 
-    j = 0
+    epd.init(
+        epd.PART_UPDATE
+    )
+
+
+    # -----------------------------------------------------
+    # Variables de actualización
+    # -----------------------------------------------------
+
+    Refresh_Count = 0
+
     ReFlag = 0
+
     SelfFlag = 0
+
+
+    # =====================================================
+    # LOOP PRINCIPAL
+    # =====================================================
 
     while True:
 
+
         # -------------------------------------------------
-        # Actualización parcial
+        # Refresh parcial
         # -------------------------------------------------
 
         if ReFlag == 1:
+
             epd.displayPartial_Wait(
-                epd.getbuffer(image)
+                epd.getbuffer(
+                    image
+                )
             )
 
-            j += 1
+            Refresh_Count += 1
+
             ReFlag = 0
 
-            print("*** Screen refresh ***")
-
-        # -------------------------------------------------
-        # Actualización completa periódica
-        # -------------------------------------------------
-
-        elif j > 50 or SelfFlag == 1:
-            SelfFlag = 0
-            j = 0
-
-            epd.init(epd.FULL_UPDATE)
-
-            epd.displayPartBaseImage(
-                epd.getbuffer(image)
+            print(
+                "*** Screen refresh ***"
             )
 
-            epd.init(epd.PART_UPDATE)
-
-            print("--- Full refresh ---")
 
         # -------------------------------------------------
-        # Leer pantalla táctil
+        # Refresh completo periódico
+        # -------------------------------------------------
+
+        elif (
+            Refresh_Count > 50
+            or SelfFlag == 1
+        ):
+
+            SelfFlag = 0
+
+            Refresh_Count = 0
+
+            epd.init(
+                epd.FULL_UPDATE
+            )
+
+            epd.displayPartBaseImage(
+                epd.getbuffer(
+                    image
+                )
+            )
+
+            epd.init(
+                epd.PART_UPDATE
+            )
+
+            print(
+                "--- Full refresh ---"
+            )
+
+
+        # -------------------------------------------------
+        # Leer touch
         # -------------------------------------------------
 
         gt.GT_Scan(
@@ -413,20 +557,36 @@ try:
             GT_Old
         )
 
+
+        # -------------------------------------------------
+        # Si no cambió el toque
+        # -------------------------------------------------
+
         if (
             GT_Old.X[0] == GT_Dev.X[0]
-            and GT_Old.Y[0] == GT_Dev.Y[0]
-            and GT_Old.S[0] == GT_Dev.S[0]
+            and
+            GT_Old.Y[0] == GT_Dev.Y[0]
+            and
+            GT_Old.S[0] == GT_Dev.S[0]
         ):
             continue
+
+
+        # -------------------------------------------------
+        # Si no hay toque
+        # -------------------------------------------------
 
         if not GT_Dev.TouchpointFlag:
             continue
 
+
         GT_Dev.TouchpointFlag = 0
 
+
         touch_x = GT_Dev.X[0]
+
         touch_y = GT_Dev.Y[0]
+
 
         print(
             "Touch:",
@@ -434,245 +594,218 @@ try:
             touch_y
         )
 
-        # =================================================
-        # PAGE 0: LISTA DE PALABRAS
-        # =================================================
-
-        if Page == 0 and ReFlag == 0:
-
-            # Botón siguiente página
-            if (
-                touch_x > 97
-                and touch_x < 119
-                and touch_y > 57
-                and touch_y < 78
-            ):
-                print("Next words page")
-
-                Photo_S += 1
-
-                if Photo_S > 2:
-                    Photo_S = 0
-
-                Show_Words_Page(
-                    image,
-                    Photo_S
-                )
-
-                ReFlag = 1
-
-            # Botón central:
-            # volver a la primera página de palabras
-            elif (
-                touch_x > 97
-                and touch_x < 119
-                and touch_y > 113
-                and touch_y < 136
-            ):
-                print("First words page")
-
-                Photo_S = 0
-
-                Show_Words_Page(
-                    image,
-                    Photo_S
-                )
-
-                ReFlag = 1
-
-            # Botón página anterior
-            elif (
-                touch_x > 97
-                and touch_x < 119
-                and touch_y > 169
-                and touch_y < 190
-            ):
-                print("Previous words page")
-
-                Photo_S -= 1
-
-                if Photo_S < 0:
-                    Photo_S = 2
-
-                Show_Words_Page(
-                    image,
-                    Photo_S
-                )
-
-                ReFlag = 1
-
-            # Botón refrescar
-            elif (
-                touch_x > 97
-                and touch_x < 119
-                and touch_y > 220
-                and touch_y < 242
-            ):
-                print("Refresh words")
-
-                SelfFlag = 1
-                ReFlag = 1
-
-            # Seleccionar una palabra
-            elif (
-                touch_x > 2
-                and touch_x < 90
-                and touch_y > 2
-                and touch_y < 248
-            ):
-                selected_item = Get_Selected_Item(
-                    touch_x,
-                    touch_y,
-                    Photo_S
-                )
-
-                if selected_item is not None:
-                    print(
-                        "Selected:",
-                        Words_S[selected_item - 1]
-                    )
-
-                    Photo_L = selected_item
-                    Page = 1
-
-                    Read_BMP(
-                        image,
-                        PagePath[1],
-                        0,
-                        0
-                    )
-
-                    Show_Photo_Large(
-                        image,
-                        Photo_L
-                    )
-
-                    ReFlag = 1
 
         # =================================================
-        # PAGE 1: IMAGEN GRANDE
+        # BOTÓN NEXT
         # =================================================
 
-        elif Page == 1 and ReFlag == 0:
+        if (
+            touch_x > 97
+            and touch_x < 119
+            and touch_y > 57
+            and touch_y < 78
+        ):
 
-            # Volver a la lista de palabras actual
-            if (
-                touch_x > 96
-                and touch_x < 117
-                and touch_y > 4
-                and touch_y < 25
-            ):
-                print("Back to words")
+            print(
+                "Next page"
+            )
 
-                Page = 0
 
-                Show_Words_Page(
-                    image,
-                    Photo_S
+            Current_Page += 1
+
+
+            # Si estamos después de la última página
+            # volver a la primera
+            if Current_Page >= Total_Pages:
+
+                Current_Page = 0
+
+
+            Show_Words(
+                image,
+                Current_Page
+            )
+
+
+            ReFlag = 1
+
+
+        # =================================================
+        # BOTÓN HOME
+        #
+        # Ahora simplemente vuelve a la página 0
+        # =================================================
+
+        elif (
+            touch_x > 97
+            and touch_x < 119
+            and touch_y > 113
+            and touch_y < 136
+        ):
+
+            print(
+                "First page"
+            )
+
+
+            Current_Page = 0
+
+
+            Show_Words(
+                image,
+                Current_Page
+            )
+
+
+            ReFlag = 1
+
+
+        # =================================================
+        # BOTÓN PREVIOUS
+        # =================================================
+
+        elif (
+            touch_x > 97
+            and touch_x < 119
+            and touch_y > 169
+            and touch_y < 190
+        ):
+
+            print(
+                "Previous page"
+            )
+
+
+            Current_Page -= 1
+
+
+            # Si estamos antes de la primera
+            # ir a la última
+            if Current_Page < 0:
+
+                Current_Page = (
+                    Total_Pages - 1
                 )
 
-                ReFlag = 1
 
-            # Elemento siguiente
-            elif (
-                touch_x > 96
-                and touch_x < 117
-                and touch_y > 57
-                and touch_y < 78
-            ):
-                print("Next item")
+            Show_Words(
+                image,
+                Current_Page
+            )
 
-                Photo_L += 1
 
-                if Photo_L > len(Words_S):
-                    Photo_L = 1
+            ReFlag = 1
 
-                Read_BMP(
-                    image,
-                    PagePath[1],
-                    0,
-                    0
+
+        # =================================================
+        # BOTÓN REFRESH
+        # =================================================
+
+        elif (
+            touch_x > 97
+            and touch_x < 119
+            and touch_y > 220
+            and touch_y < 242
+        ):
+
+            print(
+                "Refresh"
+            )
+
+
+            # ---------------------------------------------
+            # Volver a leer words.txt
+            #
+            # Esto permite modificar el archivo mientras
+            # el programa está funcionando.
+            # ---------------------------------------------
+
+            Words_S = Load_Words()
+
+            Total_Pages = Get_Total_Pages()
+
+
+            # Si al eliminar palabras la página actual
+            # ya no existe, volver a la primera
+            if Current_Page >= Total_Pages:
+
+                Current_Page = 0
+
+
+            Show_Words(
+                image,
+                Current_Page
+            )
+
+
+            SelfFlag = 1
+
+            ReFlag = 1
+
+
+        # =================================================
+        # TOCAR UNA PALABRA
+        # =================================================
+
+        elif (
+            touch_x > 2
+            and touch_x < 90
+            and touch_y > 2
+            and touch_y < 248
+        ):
+
+            selected_index = Get_Selected_Word(
+                touch_x,
+                touch_y,
+                Current_Page
+            )
+
+
+            if selected_index is not None:
+
+                selected_word = (
+                    Words_S[selected_index]
                 )
 
-                Show_Photo_Large(
-                    image,
-                    Photo_L
+
+                print(
+                    "Selected:",
+                    selected_word
                 )
 
-                ReFlag = 1
 
-            # Volver a la primera página de palabras
-            elif (
-                touch_x > 96
-                and touch_x < 117
-                and touch_y > 113
-                and touch_y < 136
-            ):
-                print("First words page")
-
-                Page = 0
-                Photo_S = 0
-
-                Show_Words_Page(
-                    image,
-                    Photo_S
-                )
-
-                ReFlag = 1
-
-            # Elemento anterior
-            elif (
-                touch_x > 96
-                and touch_x < 117
-                and touch_y > 169
-                and touch_y < 190
-            ):
-                print("Previous item")
-
-                Photo_L -= 1
-
-                if Photo_L < 1:
-                    Photo_L = len(Words_S)
-
-                Read_BMP(
-                    image,
-                    PagePath[1],
-                    0,
-                    0
-                )
-
-                Show_Photo_Large(
-                    image,
-                    Photo_L
-                )
-
-                ReFlag = 1
-
-            # Refrescar
-            elif (
-                touch_x > 96
-                and touch_x < 117
-                and touch_y > 220
-                and touch_y < 242
-            ):
-                print("Refresh item")
-
-                SelfFlag = 1
-                ReFlag = 1
+                # Aquí después podemos hacer algo
+                # según la palabra seleccionada.
+                #
+                # Por ejemplo:
+                #
+                # if selected_word == "Ejercicio":
+                #     ...
+                #
+                # if selected_word == "Agua":
+                #     ...
 
 
 except IOError as error:
-    logging.info(error)
+
+    logging.info(
+        error
+    )
 
 
 except KeyboardInterrupt:
-    logging.info("ctrl + c")
+
+    logging.info(
+        "ctrl + c"
+    )
 
     flag_t = 0
 
     epd.sleep()
 
-    time.sleep(2)
+    time.sleep(
+        2
+    )
 
     t.join()
 
