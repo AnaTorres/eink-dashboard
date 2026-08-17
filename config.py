@@ -4,14 +4,9 @@ BASE_DIR = os.path.dirname(
     os.path.realpath(__file__)
 )
 
-ACTIVITIES_FILE = os.path.join(
+DATABASE_FILE = os.path.join(
     BASE_DIR,
-    "activities.json"
-)
-
-RECORDS_FILE = os.path.join(
-    BASE_DIR,
-    "time_records.json"
+    "actividades.db"
 )
 
 FONT_FILE = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"

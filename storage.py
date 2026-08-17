@@ -1,156 +1,184 @@
-import json
-
+import sqlite3
 from datetime import datetime
 
-from config import (
-    ACTIVITIES_FILE,
-    RECORDS_FILE
-)
+from config import DATABASE_FILE
 
+
+# =========================================================
+# CONEXIÓN
+# =========================================================
+
+def get_connection():
+    """
+    Abre una conexión a SQLite.
+    """
+
+    connection = sqlite3.connect(
+        DATABASE_FILE
+    )
+
+    connection.row_factory = sqlite3.Row
+
+    return connection
+
+
+# =========================================================
+# CARGAR ACTIVIDADES
+# =========================================================
 
 def load_activities():
     """
-    Carga las actividades desde activities.json.
+    Lee las actividades desde SQLite.
+
+    Devuelve una lista como:
+
+    [
+        {
+            "id": 1,
+            "name": "Ejercicio"
+        },
+        {
+            "id": 2,
+            "name": "Leer"
+        }
+    ]
     """
 
-    try:
-        with open(
-            ACTIVITIES_FILE,
-            "r",
-            encoding="utf-8"
-        ) as file:
-            data = json.load(file)
+    connection = get_connection()
 
-        if not isinstance(data, list):
-            print(
-                "ERROR: activities.json debe contener una lista"
-            )
-            return []
+    try:
+
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                id,
+                nombre
+            FROM actividades
+            ORDER BY id
+            """
+        )
+
+        rows = cursor.fetchall()
 
         activities = []
 
-        for item in data:
-
-            if not isinstance(item, dict):
-                continue
-
-            if "name" not in item:
-                continue
-
-            name = str(
-                item["name"]
-            ).strip()
-
-            if not name:
-                continue
+        for row in rows:
 
             activities.append(
-                item
+                {
+                    "id": row["id"],
+                    "name": row["nombre"]
+                }
             )
 
         return activities
 
-    except FileNotFoundError:
+    finally:
 
-        print(
-            "ERROR: No se encontró activities.json"
-        )
-
-        return []
-
-    except json.JSONDecodeError as error:
-
-        print(
-            "ERROR: activities.json no es válido"
-        )
-
-        print(
-            error
-        )
-
-        return []
+        connection.close()
 
 
-def load_records():
-    """
-    Carga los registros existentes.
-    """
-
-    try:
-        with open(
-            RECORDS_FILE,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            records = json.load(
-                file
-            )
-
-        if not isinstance(
-            records,
-            list
-        ):
-            return []
-
-        return records
-
-    except (
-        FileNotFoundError,
-        json.JSONDecodeError
-    ):
-
-        return []
-
+# =========================================================
+# GUARDAR TIEMPO
+# =========================================================
 
 def save_time_record(
     activity,
     minutes
 ):
     """
-    Guarda un nuevo registro en time_records.json.
+    Guarda el tiempo asociado a una actividad.
     """
 
-    records = load_records()
+    connection = get_connection()
 
-    now = datetime.now()
+    try:
 
-    record = {
-        "activity_id": activity.get(
-            "id"
-        ),
-        "activity_name": activity.get(
-            "name"
-        ),
-        "minutes": minutes,
-        "date": now.strftime(
-            "%Y-%m-%d"
-        ),
-        "created_at": now.isoformat(
-            timespec="seconds"
-        )
-    }
+        cursor = connection.cursor()
 
-    records.append(
-        record
-    )
+        now = datetime.now()
 
-    with open(
-        RECORDS_FILE,
-        "w",
-        encoding="utf-8"
-    ) as file:
-
-        json.dump(
-            records,
-            file,
-            ensure_ascii=False,
-            indent=2
+        cursor.execute(
+            """
+            INSERT INTO registros (
+                actividad_id,
+                minutos,
+                fecha
+            )
+            VALUES (?, ?, ?)
+            """,
+            (
+                activity["id"],
+                minutes,
+                now.isoformat(
+                    timespec="seconds"
+                )
+            )
         )
 
-    print(
-        "Registro guardado:",
-        activity.get("name"),
-        minutes,
-        "minutos"
-    )
+        connection.commit()
+
+        print(
+            "Registro guardado:",
+            activity["name"],
+            minutes,
+            "minutos"
+        )
+
+    finally:
+
+        connection.close()
+
+
+# =========================================================
+# OBTENER REGISTROS
+# =========================================================
+
+def load_records():
+    """
+    Devuelve todos los registros junto
+    con el nombre de la actividad.
+    """
+
+    connection = get_connection()
+
+    try:
+
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                registros.id,
+                actividades.nombre,
+                registros.minutos,
+                registros.fecha
+            FROM registros
+            JOIN actividades
+                ON actividades.id = registros.actividad_id
+            ORDER BY registros.fecha DESC
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        records = []
+
+        for row in rows:
+
+            records.append(
+                {
+                    "id": row["id"],
+                    "activity_name": row["nombre"],
+                    "minutes": row["minutos"],
+                    "date": row["fecha"]
+                }
+            )
+
+        return records
+
+    finally:
+
+        connection.close()
