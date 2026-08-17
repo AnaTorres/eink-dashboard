@@ -1,7 +1,11 @@
 import sqlite3
+
 from datetime import datetime
 
-from config import DATABASE_FILE
+from config import (
+    DATABASE_FILE,
+    MONTHS_PER_YEAR
+)
 
 
 # =========================================================
@@ -9,9 +13,6 @@ from config import DATABASE_FILE
 # =========================================================
 
 def get_connection():
-    """
-    Abre una conexión a SQLite.
-    """
 
     connection = sqlite3.connect(
         DATABASE_FILE
@@ -28,20 +29,7 @@ def get_connection():
 
 def load_activities():
     """
-    Lee las actividades desde SQLite.
-
-    Devuelve una lista como:
-
-    [
-        {
-            "id": 1,
-            "name": "Ejercicio"
-        },
-        {
-            "id": 2,
-            "name": "Leer"
-        }
-    ]
+    Carga las actividades junto con su meta anual.
     """
 
     connection = get_connection()
@@ -54,7 +42,8 @@ def load_activities():
             """
             SELECT
                 id,
-                nombre
+                nombre,
+                meta_minutos
             FROM actividades
             ORDER BY id
             """
@@ -69,7 +58,11 @@ def load_activities():
             activities.append(
                 {
                     "id": row["id"],
-                    "name": row["nombre"]
+                    "name": row["nombre"],
+                    "goal_minutes": (
+                        row["meta_minutos"]
+                        or 0
+                    )
                 }
             )
 
@@ -81,16 +74,13 @@ def load_activities():
 
 
 # =========================================================
-# GUARDAR TIEMPO
+# GUARDAR REGISTRO
 # =========================================================
 
 def save_time_record(
     activity,
     minutes
 ):
-    """
-    Guarda el tiempo asociado a una actividad.
-    """
 
     connection = get_connection()
 
@@ -133,13 +123,16 @@ def save_time_record(
 
 
 # =========================================================
-# OBTENER REGISTROS
+# MINUTOS DEL AÑO
 # =========================================================
 
-def load_records():
+def get_year_minutes(
+    activity_id
+):
     """
-    Devuelve todos los registros junto
-    con el nombre de la actividad.
+    Suma todos los minutos de la actividad
+    desde el 1 de enero hasta el 31 de diciembre
+    del año actual.
     """
 
     connection = get_connection()
@@ -148,37 +141,208 @@ def load_records():
 
         cursor = connection.cursor()
 
+        current_year = (
+            datetime.now().year
+        )
+
+        start_date = (
+            f"{current_year}-01-01"
+        )
+
+        end_date = (
+            f"{current_year + 1}-01-01"
+        )
+
         cursor.execute(
             """
             SELECT
-                registros.id,
-                actividades.nombre,
-                registros.minutos,
-                registros.fecha
+                COALESCE(
+                    SUM(minutos),
+                    0
+                ) AS total
             FROM registros
-            JOIN actividades
-                ON actividades.id = registros.actividad_id
-            ORDER BY registros.fecha DESC
-            """
+            WHERE actividad_id = ?
+            AND fecha >= ?
+            AND fecha < ?
+            """,
+            (
+                activity_id,
+                start_date,
+                end_date
+            )
         )
 
-        rows = cursor.fetchall()
+        row = cursor.fetchone()
 
-        records = []
-
-        for row in rows:
-
-            records.append(
-                {
-                    "id": row["id"],
-                    "activity_name": row["nombre"],
-                    "minutes": row["minutos"],
-                    "date": row["fecha"]
-                }
-            )
-
-        return records
+        return row["total"]
 
     finally:
 
         connection.close()
+
+
+# =========================================================
+# MINUTOS DEL MES
+# =========================================================
+
+def get_month_minutes(
+    activity_id
+):
+    """
+    Suma los minutos realizados durante
+    el mes actual.
+    """
+
+    connection = get_connection()
+
+    try:
+
+        cursor = connection.cursor()
+
+        now = datetime.now()
+
+        year = now.year
+        month = now.month
+
+        start_date = (
+            f"{year}-{month:02d}-01"
+        )
+
+        if month == 12:
+
+            end_date = (
+                f"{year + 1}-01-01"
+            )
+
+        else:
+
+            end_date = (
+                f"{year}-{month + 1:02d}-01"
+            )
+
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(
+                    SUM(minutos),
+                    0
+                ) AS total
+            FROM registros
+            WHERE actividad_id = ?
+            AND fecha >= ?
+            AND fecha < ?
+            """,
+            (
+                activity_id,
+                start_date,
+                end_date
+            )
+        )
+
+        row = cursor.fetchone()
+
+        return row["total"]
+
+    finally:
+
+        connection.close()
+
+
+# =========================================================
+# CALCULAR PROGRESO
+# =========================================================
+
+def get_activity_progress(
+    activity
+):
+    """
+    Devuelve el progreso anual y mensual
+    de una actividad.
+    """
+
+    annual_goal = activity.get(
+        "goal_minutes",
+        0
+    )
+
+    year_minutes = (
+        get_year_minutes(
+            activity["id"]
+        )
+    )
+
+    month_minutes = (
+        get_month_minutes(
+            activity["id"]
+        )
+    )
+
+
+    # -----------------------------------------------------
+    # Si no existe meta
+    # -----------------------------------------------------
+
+    if annual_goal <= 0:
+
+        return {
+            "year_minutes": year_minutes,
+            "annual_goal": 0,
+            "year_percentage": 0,
+
+            "month_minutes": month_minutes,
+            "monthly_goal": 0,
+            "month_percentage": 0
+        }
+
+
+    # -----------------------------------------------------
+    # Meta mensual estimada
+    # -----------------------------------------------------
+
+    monthly_goal = (
+        annual_goal
+        / MONTHS_PER_YEAR
+    )
+
+
+    # -----------------------------------------------------
+    # Porcentaje anual
+    # -----------------------------------------------------
+
+    year_percentage = (
+        year_minutes
+        / annual_goal
+        * 100
+    )
+
+
+    # -----------------------------------------------------
+    # Porcentaje mensual
+    # -----------------------------------------------------
+
+    month_percentage = (
+        month_minutes
+        / monthly_goal
+        * 100
+    )
+
+
+    return {
+        "year_minutes": year_minutes,
+
+        "annual_goal": annual_goal,
+
+        "year_percentage": round(
+            year_percentage
+        ),
+
+        "month_minutes": month_minutes,
+
+        "monthly_goal": round(
+            monthly_goal
+        ),
+
+        "month_percentage": round(
+            month_percentage
+        )
+    }

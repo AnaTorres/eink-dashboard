@@ -15,19 +15,13 @@ import threading
 
 libdir = os.path.join(
     os.path.dirname(
-        
-            os.path.realpath(__file__)
-        
+        os.path.realpath(__file__)
     ),
     "lib"
 )
 
-if os.path.exists(
-    libdir
-):
-    sys.path.append(
-        libdir
-    )
+if os.path.exists(libdir):
+    sys.path.append(libdir)
 
 
 from TP_lib import gt1151
@@ -49,7 +43,8 @@ from config import (
 
 from storage import (
     load_activities,
-    save_time_record
+    save_time_record,
+    get_activity_progress
 )
 
 from display import (
@@ -76,59 +71,41 @@ logging.basicConfig(
     level=logging.DEBUG
 )
 
-
 flag_t = 1
 
 
 # =========================================================
-# TOUCH THREAD
+# THREAD TOUCH
 # =========================================================
 
 def pthread_irq():
+    global flag_t
 
-    print(
-        "pthread running"
-    )
+    print("pthread running")
 
     while flag_t == 1:
 
-        if gt.digital_read(
-            gt.INT
-        ) == 0:
-
+        if gt.digital_read(gt.INT) == 0:
             GT_Dev.Touch = 1
-
         else:
-
             GT_Dev.Touch = 0
 
-        time.sleep(
-            0.01
-        )
+        time.sleep(0.01)
 
-    print(
-        "thread exit"
-    )
+    print("thread exit")
 
 
 # =========================================================
-# TOTAL PÁGINAS
+# TOTAL DE PÁGINAS
 # =========================================================
 
-def get_total_pages(
-    activities
-):
+def get_total_pages(activities):
 
-    if len(
-        activities
-    ) == 0:
-
+    if len(activities) == 0:
         return 1
 
     return math.ceil(
-        len(
-            activities
-        )
+        len(activities)
         / ITEMS_PER_PAGE
     )
 
@@ -145,28 +122,20 @@ try:
 
 
     # -----------------------------------------------------
-    # Waveshare
+    # Inicializar Waveshare
     # -----------------------------------------------------
 
-    epd = (
-        epd2in13_V3.EPD()
-    )
+    epd = epd2in13_V3.EPD()
 
-    gt = (
-        gt1151.GT1151()
-    )
+    gt = gt1151.GT1151()
 
-    GT_Dev = (
-        gt1151.GT_Development()
-    )
+    GT_Dev = gt1151.GT_Development()
 
-    GT_Old = (
-        gt1151.GT_Development()
-    )
+    GT_Old = gt1151.GT_Development()
 
 
     # -----------------------------------------------------
-    # Inicialización
+    # Inicialización pantalla + touch
     # -----------------------------------------------------
 
     epd.init(
@@ -181,7 +150,7 @@ try:
 
 
     # -----------------------------------------------------
-    # Touch thread
+    # Thread touch
     # -----------------------------------------------------
 
     t = threading.Thread(
@@ -194,25 +163,20 @@ try:
 
 
     # -----------------------------------------------------
-    # Datos
+    # Cargar actividades desde SQLite
     # -----------------------------------------------------
 
-    activities = (
-        load_activities()
-    )
+    activities = load_activities()
 
-    total_pages = (
-        get_total_pages(
-            activities
-        )
+
+    total_pages = get_total_pages(
+        activities
     )
 
 
     print(
         "Actividades:",
-        len(
-            activities
-        )
+        len(activities)
     )
 
     print(
@@ -222,7 +186,7 @@ try:
 
 
     # -----------------------------------------------------
-    # Estado aplicación
+    # Estado de la aplicación
     # -----------------------------------------------------
 
     current_page = 0
@@ -237,14 +201,15 @@ try:
         DEFAULT_MINUTES
     )
 
+    selected_progress = None
+
 
     # -----------------------------------------------------
-    # Imagen inicial
+    # Crear imagen inicial
     # -----------------------------------------------------
 
-    image = (
-        create_blank_image()
-    )
+    image = create_blank_image()
+
 
     show_activities(
         image,
@@ -253,16 +218,25 @@ try:
     )
 
 
+    # -----------------------------------------------------
+    # Mostrar primera pantalla
+    # -----------------------------------------------------
+
     epd.displayPartBaseImage(
         epd.getbuffer(
             image
         )
     )
 
+
     epd.init(
         epd.PART_UPDATE
     )
 
+
+    # -----------------------------------------------------
+    # Control de refresh
+    # -----------------------------------------------------
 
     refresh_count = 0
 
@@ -279,7 +253,7 @@ try:
 
 
         # -------------------------------------------------
-        # Refresh parcial
+        # REFRESH PARCIAL
         # -------------------------------------------------
 
         if refresh_required:
@@ -296,13 +270,12 @@ try:
 
 
         # -------------------------------------------------
-        # Refresh completo
+        # REFRESH COMPLETO
         # -------------------------------------------------
 
         elif (
             refresh_count > 40
-            or
-            full_refresh_required
+            or full_refresh_required
         ):
 
             refresh_count = 0
@@ -328,7 +301,7 @@ try:
 
 
         # -------------------------------------------------
-        # Leer touch
+        # LEER TOUCH
         # -------------------------------------------------
 
         gt.GT_Scan(
@@ -337,41 +310,34 @@ try:
         )
 
 
+        # -------------------------------------------------
+        # Si el toque no cambió, ignorar
+        # -------------------------------------------------
+
         if (
-            GT_Old.X[0]
-            == GT_Dev.X[0]
-
+            GT_Old.X[0] == GT_Dev.X[0]
             and
-
-            GT_Old.Y[0]
-            == GT_Dev.Y[0]
-
+            GT_Old.Y[0] == GT_Dev.Y[0]
             and
-
-            GT_Old.S[0]
-            == GT_Dev.S[0]
+            GT_Old.S[0] == GT_Dev.S[0]
         ):
-
             continue
 
 
-        if not (
-            GT_Dev.TouchpointFlag
-        ):
+        # -------------------------------------------------
+        # Si no existe un touch válido
+        # -------------------------------------------------
 
+        if not GT_Dev.TouchpointFlag:
             continue
 
 
         GT_Dev.TouchpointFlag = 0
 
 
-        touch_x = (
-            GT_Dev.X[0]
-        )
+        touch_x = GT_Dev.X[0]
 
-        touch_y = (
-            GT_Dev.Y[0]
-        )
+        touch_y = GT_Dev.Y[0]
 
 
         print(
@@ -382,7 +348,7 @@ try:
 
 
         # =================================================
-        # LISTA DE ACTIVIDADES
+        # PANTALLA: LISTA DE ACTIVIDADES
         # =================================================
 
         if (
@@ -392,7 +358,7 @@ try:
 
 
             # ---------------------------------------------
-            # NEXT
+            # NEXT PAGE
             # ---------------------------------------------
 
             if is_next_button(
@@ -407,7 +373,6 @@ try:
                     current_page
                     >= total_pages
                 ):
-
                     current_page = 0
 
 
@@ -422,7 +387,7 @@ try:
 
 
             # ---------------------------------------------
-            # PREVIOUS
+            # PREVIOUS PAGE
             # ---------------------------------------------
 
             elif is_previous_button(
@@ -433,13 +398,10 @@ try:
                 current_page -= 1
 
 
-                if (
-                    current_page < 0
-                ):
+                if current_page < 0:
 
                     current_page = (
-                        total_pages
-                        - 1
+                        total_pages - 1
                     )
 
 
@@ -454,7 +416,7 @@ try:
 
 
             # ---------------------------------------------
-            # ACTIVIDAD
+            # SELECCIONAR ACTIVIDAD
             # ---------------------------------------------
 
             elif is_activity_area(
@@ -472,23 +434,43 @@ try:
                 )
 
 
-                if (
-                    selected_activity
-                    is not None
-                ):
+                if selected_activity is not None:
 
                     print(
-                        "Actividad:",
-                        selected_activity[
-                            "name"
-                        ]
+                        "Actividad seleccionada:",
+                        selected_activity["name"]
                     )
 
+
+                    # -------------------------------------
+                    # Tiempo inicial
+                    # -------------------------------------
 
                     selected_minutes = (
                         DEFAULT_MINUTES
                     )
 
+
+                    # -------------------------------------
+                    # Obtener progreso desde SQLite
+                    # -------------------------------------
+
+                    selected_progress = (
+                        get_activity_progress(
+                            selected_activity
+                        )
+                    )
+
+
+                    print(
+                        "Progreso:",
+                        selected_progress
+                    )
+
+
+                    # -------------------------------------
+                    # Cambiar de pantalla
+                    # -------------------------------------
 
                     current_screen = (
                         PAGE_DURATION
@@ -498,7 +480,8 @@ try:
                     show_duration_screen(
                         image,
                         selected_activity,
-                        selected_minutes
+                        selected_minutes,
+                        selected_progress
                     )
 
 
@@ -506,13 +489,14 @@ try:
 
 
         # =================================================
-        # DURACIÓN
+        # PANTALLA: DURACIÓN Y PROGRESO
         # =================================================
 
         elif (
             current_screen
             == PAGE_DURATION
         ):
+
 
             # ---------------------------------------------
             # + MINUTOS
@@ -522,13 +506,19 @@ try:
                 touch_x,
                 touch_y
             ):
-                selected_minutes += MINUTES_STEP
+
+                selected_minutes += (
+                    MINUTES_STEP
+                )
+
 
                 show_duration_screen(
                     image,
                     selected_activity,
-                    selected_minutes
+                    selected_minutes,
+                    selected_progress
                 )
+
 
                 refresh_required = True
 
@@ -541,19 +531,50 @@ try:
                 touch_x,
                 touch_y
             ):
+
                 save_time_record(
                     selected_activity,
                     selected_minutes
                 )
 
-                current_screen = PAGE_ACTIVITY_LIST
+
+                # -----------------------------------------
+                # Recalcular progreso después de guardar
+                # -----------------------------------------
+
+                selected_progress = (
+                    get_activity_progress(
+                        selected_activity
+                    )
+                )
+
+
+                print(
+                    "Nuevo progreso:",
+                    selected_progress
+                )
+
+
+                # -----------------------------------------
+                # Volver a lista
+                # -----------------------------------------
+
+                current_screen = (
+                    PAGE_ACTIVITY_LIST
+                )
+
+
                 selected_activity = None
+
+                selected_progress = None
+
 
                 show_activities(
                     image,
                     activities,
                     current_page
                 )
+
 
                 refresh_required = True
 
@@ -566,30 +587,56 @@ try:
                 touch_x,
                 touch_y
             ):
-                selected_minutes -= MINUTES_STEP
 
-                if selected_minutes < MIN_MINUTES:
-                    selected_minutes = MIN_MINUTES
+                selected_minutes -= (
+                    MINUTES_STEP
+                )
+
+
+                if (
+                    selected_minutes
+                    < MIN_MINUTES
+                ):
+
+                    selected_minutes = (
+                        MIN_MINUTES
+                    )
+
 
                 show_duration_screen(
                     image,
                     selected_activity,
-                    selected_minutes
+                    selected_minutes,
+                    selected_progress
                 )
+
 
                 refresh_required = True
 
 
             # ---------------------------------------------
-            # VOLVER
+            # VOLVER SIN GUARDAR
             # ---------------------------------------------
 
             elif is_bottom_button(
                 touch_x,
                 touch_y
             ):
-                current_screen = PAGE_ACTIVITY_LIST
+
+                print(
+                    "Cancelado"
+                )
+
+
+                current_screen = (
+                    PAGE_ACTIVITY_LIST
+                )
+
+
                 selected_activity = None
+
+                selected_progress = None
+
 
                 show_activities(
                     image,
@@ -597,18 +644,59 @@ try:
                     current_page
                 )
 
+
                 refresh_required = True
 
 
 # =========================================================
-# ERROR
+# ERROR DE I/O
 # =========================================================
 
 except IOError as error:
 
-    logging.info(
+    logging.exception(
+        "IOError: %s",
         error
     )
+
+
+# =========================================================
+# CUALQUIER OTRO ERROR
+# =========================================================
+
+except Exception as error:
+
+    logging.exception(
+        "Error inesperado: %s",
+        error
+    )
+
+
+    flag_t = 0
+
+
+    try:
+
+        if "t" in locals():
+            t.join(
+                timeout=1
+            )
+
+    except Exception:
+        pass
+
+
+    try:
+
+        if "epd" in locals():
+            epd.sleep()
+            epd.Dev_exit()
+
+    except Exception:
+        pass
+
+
+    sys.exit(1)
 
 
 # =========================================================
@@ -625,18 +713,28 @@ except KeyboardInterrupt:
     flag_t = 0
 
 
-    epd.sleep()
+    try:
+
+        t.join(
+            timeout=1
+        )
+
+    except Exception:
+        pass
 
 
-    time.sleep(
-        2
-    )
+    try:
 
+        epd.sleep()
 
-    t.join()
+        time.sleep(
+            2
+        )
 
+        epd.Dev_exit()
 
-    epd.Dev_exit()
+    except Exception:
+        pass
 
 
     sys.exit()

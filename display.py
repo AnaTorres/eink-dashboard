@@ -33,6 +33,57 @@ def create_blank_image():
         255
     )
 
+def draw_progress_bar(
+    draw,
+    x,
+    y,
+    width,
+    height,
+    percentage
+):
+    """
+    Dibuja una barra de progreso monocromática.
+    """
+
+    # Limitar visualmente entre 0 y 100
+    visual_percentage = max(
+        0,
+        min(
+            percentage,
+            100
+        )
+    )
+
+    # Borde
+    draw.rectangle(
+        (
+            x,
+            y,
+            x + width,
+            y + height
+        ),
+        outline=0,
+        fill=255
+    )
+
+    filled_width = int(
+        width
+        * visual_percentage
+        / 100
+    )
+
+    if filled_width > 0:
+
+        draw.rectangle(
+            (
+                x,
+                y,
+                x + filled_width,
+                y + height
+            ),
+            fill=0
+        )
+
 
 def draw_centered_text(
     draw,
@@ -268,16 +319,15 @@ def show_activities(
 def show_duration_screen(
     image,
     activity,
-    minutes
+    minutes,
+    progress
 ):
-    """
-    Pantalla para seleccionar duración.
-    """
 
     draw = ImageDraw.Draw(
         image
     )
 
+    # Limpiar pantalla
     draw.rectangle(
         (
             0,
@@ -288,14 +338,18 @@ def show_duration_screen(
         fill=255
     )
 
-    # Nombre de la actividad
+
+    # =====================================================
+    # ACTIVIDAD
+    # =====================================================
+
     draw_centered_text(
         draw,
         (
+            3,
             5,
-            20,
             90,
-            80
+            35
         ),
         str(
             activity["name"]
@@ -303,47 +357,201 @@ def show_duration_screen(
         font15
     )
 
-    # Tiempo
+
+    # =====================================================
+    # TIEMPO A REGISTRAR
+    # =====================================================
+
     draw_centered_text(
         draw,
         (
-            5,
+            3,
+            38,
             90,
-            90,
-            160
+            72
         ),
         str(minutes) + " min",
         font24
     )
 
+
+    # =====================================================
+    # PROGRESO ANUAL
+    # =====================================================
+
+    year_minutes = progress[
+        "year_minutes"
+    ]
+
+    annual_goal = progress[
+        "annual_goal"
+    ]
+
+    year_percentage = progress[
+        "year_percentage"
+    ]
+
+
+    draw.text(
+        (
+            5,
+            82
+        ),
+        "Año",
+        font=font15,
+        fill=0
+    )
+
+
+    year_text = (
+        f"{year_minutes}/{annual_goal}"
+    )
+
+
+    draw.text(
+        (
+            40,
+            82
+        ),
+        year_text,
+        font=font15,
+        fill=0
+    )
+
+
+    draw_progress_bar(
+        draw,
+        5,
+        102,
+        80,
+        8,
+        year_percentage
+    )
+
+
+    draw.text(
+        (
+            5,
+            114
+        ),
+        f"{year_percentage}%",
+        font=font15,
+        fill=0
+    )
+
+
+    # =====================================================
+    # PROGRESO MENSUAL
+    # =====================================================
+
+    month_minutes = progress[
+        "month_minutes"
+    ]
+
+    monthly_goal = progress[
+        "monthly_goal"
+    ]
+
+    month_percentage = progress[
+        "month_percentage"
+    ]
+
+
+    draw.text(
+        (
+            5,
+            140
+        ),
+        "Mes",
+        font=font15,
+        fill=0
+    )
+
+
+    month_text = (
+        f"{month_minutes}/{monthly_goal}"
+    )
+
+
+    draw.text(
+        (
+            40,
+            140
+        ),
+        month_text,
+        font=font15,
+        fill=0
+    )
+
+
+    draw_progress_bar(
+        draw,
+        5,
+        160,
+        80,
+        8,
+        month_percentage
+    )
+
+
+    draw.text(
+        (
+            5,
+            172
+        ),
+        f"{month_percentage}%",
+        font=font15,
+        fill=0
+    )
+
+
+    # =====================================================
+    # BOTONES
+    # =====================================================
+
     # + minutos
     draw.text(
-        (100, 60),
+        (
+            100,
+            60
+        ),
         "+",
         font=font24,
         fill=0
     )
 
+
     # Guardar
     draw.text(
-        (100, 115),
+        (
+            100,
+            115
+        ),
         "S",
         font=font15,
         fill=0
     )
 
+
     # - minutos
     draw.text(
-        (100, 170),
+        (
+            100,
+            170
+        ),
         "-",
         font=font24,
         fill=0
     )
 
+
     # Volver
     draw.text(
-        (100, 220),
-        "⏎",
+        (
+            100,
+            220
+        ),
+        "B",
         font=font15,
         fill=0
     )
