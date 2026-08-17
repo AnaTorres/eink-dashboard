@@ -41,11 +41,17 @@ def draw_centered_text(
     font
 ):
     """
-    Escribe texto horizontal centrado dentro de un rectángulo.
+    Dibuja el texto centrado.
+
+    Si contiene varias palabras y no cabe horizontalmente,
+    intenta dividirlo en dos líneas.
     """
 
     x1, y1, x2, y2 = box
 
+    max_width = x2 - x1
+
+    # Medir el texto completo
     bbox = draw.textbbox(
         (0, 0),
         text,
@@ -53,22 +59,102 @@ def draw_centered_text(
     )
 
     text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
 
-    x = x1 + (
-        (x2 - x1 - text_width) // 2
+    # Si cabe, mostrar normalmente
+    if text_width <= max_width - 6:
+
+        text_height = bbox[3] - bbox[1]
+
+        x = x1 + (
+            max_width - text_width
+        ) // 2
+
+        y = y1 + (
+            (y2 - y1 - text_height) // 2
+        )
+
+        draw.text(
+            (x, y),
+            text,
+            font=font,
+            fill=0
+        )
+
+        return
+
+
+    # -----------------------------------------------------
+    # Intentar dividir en dos líneas
+    # -----------------------------------------------------
+
+    words = text.split()
+
+    if len(words) >= 2:
+
+        middle = len(words) // 2
+
+        line1 = " ".join(
+            words[:middle]
+        )
+
+        line2 = " ".join(
+            words[middle:]
+        )
+
+        lines = [
+            line1,
+            line2
+        ]
+
+    else:
+        lines = [text]
+
+
+    # -----------------------------------------------------
+    # Calcular altura total
+    # -----------------------------------------------------
+
+    line_height = 17
+
+    total_height = (
+        len(lines)
+        * line_height
     )
 
     y = y1 + (
-        (y2 - y1 - text_height) // 2
+        (y2 - y1 - total_height) // 2
     )
 
-    draw.text(
-        (x, y),
-        text,
-        font=font,
-        fill=0
-    )
+
+    # -----------------------------------------------------
+    # Dibujar cada línea
+    # -----------------------------------------------------
+
+    for line in lines:
+
+        bbox = draw.textbbox(
+            (0, 0),
+            line,
+            font=font
+        )
+
+        width = (
+            bbox[2]
+            - bbox[0]
+        )
+
+        x = x1 + (
+            max_width - width
+        ) // 2
+
+        draw.text(
+            (x, y),
+            line,
+            font=font,
+            fill=0
+        )
+
+        y += line_height
 
 
 def show_activities(
