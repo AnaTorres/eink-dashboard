@@ -28,6 +28,51 @@ font24 = ImageFont.truetype(
 
 
 # =========================================================
+# COORDENADAS DE BOTONES
+# =========================================================
+#
+# Las usamos también como referencia en touch.py.
+#
+#   +       y = 10  -> 50
+#   guardar y = 72  -> 112
+#   -       y = 134 -> 174
+#   volver  y = 196 -> 240
+#
+# =========================================================
+
+BUTTON_X1 = 94
+BUTTON_X2 = 124
+
+BUTTON_PLUS = (
+    BUTTON_X1,
+    10,
+    BUTTON_X2,
+    50
+)
+
+BUTTON_SAVE = (
+    BUTTON_X1,
+    72,
+    BUTTON_X2,
+    112
+)
+
+BUTTON_MINUS = (
+    BUTTON_X1,
+    134,
+    BUTTON_X2,
+    174
+)
+
+BUTTON_BACK = (
+    BUTTON_X1,
+    196,
+    BUTTON_X2,
+    240
+)
+
+
+# =========================================================
 # CREAR IMAGEN VACÍA
 # =========================================================
 
@@ -55,9 +100,6 @@ def draw_progress_bar(
     height,
     percentage
 ):
-    """
-    Dibuja una barra de progreso monocromática.
-    """
 
     visual_percentage = max(
         0,
@@ -66,6 +108,7 @@ def draw_progress_bar(
             100
         )
     )
+
 
     # Borde
     draw.rectangle(
@@ -79,11 +122,13 @@ def draw_progress_bar(
         fill=255
     )
 
+
     filled_width = int(
         width
         * visual_percentage
         / 100
     )
+
 
     if filled_width > 0:
 
@@ -108,12 +153,6 @@ def draw_centered_text(
     text,
     font
 ):
-    """
-    Dibuja texto centrado dentro de un rectángulo.
-
-    Si contiene varias palabras y no cabe,
-    intenta dividirlo en dos líneas.
-    """
 
     x1, y1, x2, y2 = box
 
@@ -123,15 +162,12 @@ def draw_centered_text(
     )
 
 
-    # -----------------------------------------------------
-    # Medir texto
-    # -----------------------------------------------------
-
     bbox = draw.textbbox(
         (0, 0),
         text,
         font=font
     )
+
 
     text_width = (
         bbox[2]
@@ -139,9 +175,9 @@ def draw_centered_text(
     )
 
 
-    # -----------------------------------------------------
-    # Cabe en una sola línea
-    # -----------------------------------------------------
+    # =====================================================
+    # UNA SOLA LÍNEA
+    # =====================================================
 
     if text_width <= max_width - 6:
 
@@ -150,10 +186,12 @@ def draw_centered_text(
             - bbox[1]
         )
 
+
         x = x1 + (
             max_width
             - text_width
         ) // 2
+
 
         y = y1 + (
             (
@@ -163,6 +201,7 @@ def draw_centered_text(
             )
             // 2
         )
+
 
         draw.text(
             (x, y),
@@ -174,11 +213,12 @@ def draw_centered_text(
         return
 
 
-    # -----------------------------------------------------
-    # Dividir en varias líneas
-    # -----------------------------------------------------
+    # =====================================================
+    # DOS LÍNEAS
+    # =====================================================
 
     words = text.split()
+
 
     if len(words) >= 2:
 
@@ -187,6 +227,7 @@ def draw_centered_text(
             // 2
         )
 
+
         line1 = " ".join(
             words[:middle]
         )
@@ -194,6 +235,7 @@ def draw_centered_text(
         line2 = " ".join(
             words[middle:]
         )
+
 
         lines = [
             line1,
@@ -209,10 +251,12 @@ def draw_centered_text(
 
     line_height = 17
 
+
     total_height = (
         len(lines)
         * line_height
     )
+
 
     y = y1 + (
         (
@@ -232,15 +276,18 @@ def draw_centered_text(
             font=font
         )
 
+
         width = (
             bbox[2]
             - bbox[0]
         )
 
+
         x = x1 + (
             max_width
             - width
         ) // 2
+
 
         draw.text(
             (x, y),
@@ -248,6 +295,7 @@ def draw_centered_text(
             font=font,
             fill=0
         )
+
 
         y += line_height
 
@@ -262,38 +310,31 @@ def draw_button(
     text,
     font
 ):
-    """
-    Dibuja un botón negro con texto blanco centrado.
-    """
 
     x1, y1, x2, y2 = box
 
 
-    # -----------------------------------------------------
     # Fondo negro
-    # -----------------------------------------------------
-
     draw.rectangle(
         box,
-        outline=0,
-        fill=0
+        fill=0,
+        outline=0
     )
 
 
-    # -----------------------------------------------------
     # Medir símbolo
-    # -----------------------------------------------------
-
     bbox = draw.textbbox(
         (0, 0),
         text,
         font=font
     )
 
+
     text_width = (
         bbox[2]
         - bbox[0]
     )
+
 
     text_height = (
         bbox[3]
@@ -301,10 +342,7 @@ def draw_button(
     )
 
 
-    # -----------------------------------------------------
-    # Posición centrada
-    # -----------------------------------------------------
-
+    # Centrar horizontalmente
     x = x1 + (
         (
             x2
@@ -314,6 +352,8 @@ def draw_button(
         // 2
     )
 
+
+    # Centrar verticalmente
     y = y1 + (
         (
             y2
@@ -324,10 +364,7 @@ def draw_button(
     ) - bbox[1]
 
 
-    # -----------------------------------------------------
-    # Texto blanco
-    # -----------------------------------------------------
-
+    # Símbolo blanco
     draw.text(
         (x, y),
         text,
@@ -337,7 +374,7 @@ def draw_button(
 
 
 # =========================================================
-# PANTALLA ACTIVIDADES
+# PANTALLA DE ACTIVIDADES
 # =========================================================
 
 def show_activities(
@@ -345,18 +382,15 @@ def show_activities(
     activities,
     page
 ):
-    """
-    Muestra cuatro actividades.
-    """
 
     draw = ImageDraw.Draw(
         image
     )
 
 
-    # -----------------------------------------------------
-    # Limpiar pantalla
-    # -----------------------------------------------------
+    # =====================================================
+    # LIMPIAR
+    # =====================================================
 
     draw.rectangle(
         (
@@ -374,12 +408,13 @@ def show_activities(
         * ITEMS_PER_PAGE
     )
 
+
     item_height = 60
 
 
-    # -----------------------------------------------------
-    # Actividades
-    # -----------------------------------------------------
+    # =====================================================
+    # ACTIVIDADES
+    # =====================================================
 
     for position in range(
         ITEMS_PER_PAGE
@@ -389,6 +424,7 @@ def show_activities(
             first_index
             + position
         )
+
 
         if index >= len(
             activities
@@ -400,6 +436,7 @@ def show_activities(
             activities[index]
         )
 
+
         text = str(
             activity["name"]
         )
@@ -410,6 +447,7 @@ def show_activities(
             * item_height
             + 2
         )
+
 
         y2 = (
             y1
@@ -440,33 +478,35 @@ def show_activities(
         )
 
 
-    # -----------------------------------------------------
-    # Botón siguiente
-    # -----------------------------------------------------
+    # =====================================================
+    # BOTONES DE NAVEGACIÓN
+    # =====================================================
+    #
+    # En esta pantalla reutilizamos:
+    #
+    #   botón +  = siguiente página
+    #   botón -  = página anterior
+    #
+    # Esto hace que las zonas táctiles sean iguales
+    # en toda la aplicación.
+    # =====================================================
 
-    draw.text(
-        (
-            100,
-            60
-        ),
+
+    # Siguiente
+    draw_button(
+        draw,
+        BUTTON_PLUS,
         "▶",
-        font=font15,
-        fill=0
+        font15
     )
 
 
-    # -----------------------------------------------------
-    # Botón anterior
-    # -----------------------------------------------------
-
-    draw.text(
-        (
-            100,
-            170
-        ),
+    # Anterior
+    draw_button(
+        draw,
+        BUTTON_MINUS,
         "◀",
-        font=font15,
-        fill=0
+        font15
     )
 
 
@@ -486,9 +526,9 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Limpiar pantalla
-    # -----------------------------------------------------
+    # =====================================================
+    # LIMPIAR
+    # =====================================================
 
     draw.rectangle(
         (
@@ -521,7 +561,7 @@ def show_duration_screen(
 
 
     # =====================================================
-    # TIEMPO A REGISTRAR
+    # MINUTOS
     # =====================================================
 
     draw_centered_text(
@@ -554,10 +594,7 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
     # Mes
-    # -----------------------------------------------------
-
     draw.text(
         (
             5,
@@ -569,13 +606,11 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Porcentaje mes
-    # -----------------------------------------------------
-
+    # Porcentaje
     percentage_text = (
         f"{month_percentage}%"
     )
+
 
     bbox = draw.textbbox(
         (0, 0),
@@ -583,10 +618,12 @@ def show_duration_screen(
         font=font15
     )
 
+
     percentage_width = (
         bbox[2]
         - bbox[0]
     )
+
 
     draw.text(
         (
@@ -600,13 +637,11 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Minutos / meta mensual
-    # -----------------------------------------------------
-
+    # Minutos / meta
     month_text = (
         f"{month_minutes}/{monthly_goal}"
     )
+
 
     draw.text(
         (
@@ -619,10 +654,7 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Barra mensual
-    # -----------------------------------------------------
-
+    # Barra
     draw_progress_bar(
         draw,
         5,
@@ -650,10 +682,7 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
     # Año
-    # -----------------------------------------------------
-
     draw.text(
         (
             5,
@@ -665,13 +694,11 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Porcentaje año
-    # -----------------------------------------------------
-
+    # Porcentaje
     percentage_text = (
         f"{year_percentage}%"
     )
+
 
     bbox = draw.textbbox(
         (0, 0),
@@ -679,10 +706,12 @@ def show_duration_screen(
         font=font15
     )
 
+
     percentage_width = (
         bbox[2]
         - bbox[0]
     )
+
 
     draw.text(
         (
@@ -696,13 +725,11 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Minutos / meta anual
-    # -----------------------------------------------------
-
+    # Minutos / meta
     year_text = (
         f"{year_minutes}/{annual_goal}"
     )
+
 
     draw.text(
         (
@@ -715,10 +742,7 @@ def show_duration_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Barra anual
-    # -----------------------------------------------------
-
+    # Barra
     draw_progress_bar(
         draw,
         5,
@@ -730,74 +754,43 @@ def show_duration_screen(
 
 
     # =====================================================
-    # BOTONES LATERALES
+    # BOTONES DERECHA
     # =====================================================
 
-    # -----------------------------------------------------
-    # + minutos
-    # -----------------------------------------------------
 
+    # + minutos
     draw_button(
         draw,
-        (
-            94,
-            35,
-            124,
-            80
-        ),
+        BUTTON_PLUS,
         "+",
         font24
     )
 
 
-    # -----------------------------------------------------
     # Guardar
-    # -----------------------------------------------------
-
     draw_button(
         draw,
-        (
-            94,
-            95,
-            124,
-            140
-        ),
-        "S",
+        BUTTON_SAVE,
+        "✓",
         font24
     )
 
 
-    # -----------------------------------------------------
     # - minutos
-    # -----------------------------------------------------
-
     draw_button(
         draw,
-        (
-            94,
-            155,
-            124,
-            200
-        ),
+        BUTTON_MINUS,
         "-",
         font24
     )
 
 
-    # -----------------------------------------------------
     # Volver
-    # -----------------------------------------------------
-
     draw_button(
         draw,
-        (
-            94,
-            210,
-            124,
-            248
-        ),
-        "B",
-        font15
+        BUTTON_BACK,
+        "←",
+        font24
     )
 
 
@@ -814,10 +807,7 @@ def show_saved_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Limpiar pantalla
-    # -----------------------------------------------------
-
+    # Limpiar
     draw.rectangle(
         (
             0,
@@ -829,17 +819,14 @@ def show_saved_screen(
     )
 
 
-    # -----------------------------------------------------
-    # Mensaje centrado
-    # -----------------------------------------------------
-
+    # Mensaje
     draw_centered_text(
         draw,
         (
             5,
-            75,
+            70,
             SCREEN_WIDTH - 5,
-            175
+            180
         ),
         "Tiempo guardado",
         font24
