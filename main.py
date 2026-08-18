@@ -55,6 +55,8 @@ from display import (
 )
 
 from touch import (
+    is_activity_next_button,
+    is_activity_previous_button,
     is_next_button,
     is_save_button,
     is_previous_button,
@@ -83,11 +85,15 @@ def pthread_irq():
 
     global flag_t
 
-    print("pthread running")
+    print(
+        "pthread running"
+    )
 
     while flag_t == 1:
 
-        if gt.digital_read(gt.INT) == 0:
+        if gt.digital_read(
+            gt.INT
+        ) == 0:
 
             GT_Dev.Touch = 1
 
@@ -95,9 +101,14 @@ def pthread_irq():
 
             GT_Dev.Touch = 0
 
-        time.sleep(0.01)
 
-    print("thread exit")
+        time.sleep(
+            0.01
+        )
+
+    print(
+        "thread exit"
+    )
 
 
 # =========================================================
@@ -108,9 +119,12 @@ def get_total_pages(
     activities
 ):
 
-    if len(activities) == 0:
+    if len(
+        activities
+    ) == 0:
 
         return 1
+
 
     return math.ceil(
         len(activities)
@@ -143,7 +157,7 @@ try:
 
 
     # =====================================================
-    # INICIALIZACIÓN PANTALLA + TOUCH
+    # INICIALIZAR PANTALLA + TOUCH
     # =====================================================
 
     epd.init(
@@ -171,14 +185,18 @@ try:
 
 
     # =====================================================
-    # CARGAR ACTIVIDADES DESDE SQLITE
+    # CARGAR ACTIVIDADES
     # =====================================================
 
-    activities = load_activities()
+    activities = (
+        load_activities()
+    )
 
 
-    total_pages = get_total_pages(
-        activities
+    total_pages = (
+        get_total_pages(
+            activities
+        )
     )
 
 
@@ -195,7 +213,7 @@ try:
 
 
     # =====================================================
-    # ESTADO DE LA APLICACIÓN
+    # ESTADO
     # =====================================================
 
     current_page = 0
@@ -214,10 +232,12 @@ try:
 
 
     # =====================================================
-    # CREAR IMAGEN INICIAL
+    # IMAGEN INICIAL
     # =====================================================
 
-    image = create_blank_image()
+    image = (
+        create_blank_image()
+    )
 
 
     show_activities(
@@ -226,10 +246,6 @@ try:
         current_page
     )
 
-
-    # =====================================================
-    # MOSTRAR PRIMERA PANTALLA
-    # =====================================================
 
     epd.displayPartBaseImage(
         epd.getbuffer(
@@ -244,7 +260,7 @@ try:
 
 
     # =====================================================
-    # CONTROL DE REFRESH
+    # CONTROL REFRESH
     # =====================================================
 
     refresh_count = 0
@@ -273,6 +289,7 @@ try:
                 )
             )
 
+
             refresh_count += 1
 
             refresh_required = False
@@ -284,7 +301,8 @@ try:
 
         elif (
             refresh_count > 40
-            or full_refresh_required
+            or
+            full_refresh_required
         ):
 
             refresh_count = 0
@@ -320,7 +338,7 @@ try:
 
 
         # =================================================
-        # SI EL TOUCH NO CAMBIÓ
+        # IGNORAR SI NO CAMBIÓ
         # =================================================
 
         if (
@@ -335,7 +353,7 @@ try:
 
 
         # =================================================
-        # SI NO EXISTE TOUCH VÁLIDO
+        # IGNORAR SI NO HAY TOUCH
         # =================================================
 
         if not GT_Dev.TouchpointFlag:
@@ -346,9 +364,13 @@ try:
         GT_Dev.TouchpointFlag = 0
 
 
-        touch_x = GT_Dev.X[0]
+        touch_x = (
+            GT_Dev.X[0]
+        )
 
-        touch_y = GT_Dev.Y[0]
+        touch_y = (
+            GT_Dev.Y[0]
+        )
 
 
         print(
@@ -359,7 +381,7 @@ try:
 
 
         # =================================================
-        # PANTALLA: LISTA DE ACTIVIDADES
+        # PANTALLA PRINCIPAL
         # =================================================
 
         if (
@@ -372,7 +394,7 @@ try:
             # SIGUIENTE PÁGINA
             # =============================================
 
-            if is_next_button(
+            if is_activity_next_button(
                 touch_x,
                 touch_y
             ):
@@ -402,7 +424,7 @@ try:
             # PÁGINA ANTERIOR
             # =============================================
 
-            elif is_previous_button(
+            elif is_activity_previous_button(
                 touch_x,
                 touch_y
             ):
@@ -413,7 +435,8 @@ try:
                 if current_page < 0:
 
                     current_page = (
-                        total_pages - 1
+                        total_pages
+                        - 1
                     )
 
 
@@ -428,7 +451,7 @@ try:
 
 
             # =============================================
-            # SELECCIONAR ACTIVIDAD
+            # ACTIVIDAD
             # =============================================
 
             elif is_activity_area(
@@ -446,26 +469,23 @@ try:
                 )
 
 
-                if selected_activity is not None:
+                if (
+                    selected_activity
+                    is not None
+                ):
 
                     print(
                         "Actividad seleccionada:",
-                        selected_activity["name"]
+                        selected_activity[
+                            "name"
+                        ]
                     )
 
-
-                    # =====================================
-                    # TIEMPO INICIAL
-                    # =====================================
 
                     selected_minutes = (
                         DEFAULT_MINUTES
                     )
 
-
-                    # =====================================
-                    # OBTENER PROGRESO
-                    # =====================================
 
                     selected_progress = (
                         get_activity_progress(
@@ -479,10 +499,6 @@ try:
                         selected_progress
                     )
 
-
-                    # =====================================
-                    # CAMBIAR DE PANTALLA
-                    # =====================================
 
                     current_screen = (
                         PAGE_DURATION
@@ -501,7 +517,7 @@ try:
 
 
         # =================================================
-        # PANTALLA: DURACIÓN Y PROGRESO
+        # PANTALLA DURACIÓN
         # =================================================
 
         elif (
@@ -545,10 +561,6 @@ try:
             ):
 
 
-                # -----------------------------------------
-                # Guardar tiempo en SQLite
-                # -----------------------------------------
-
                 save_time_record(
                     selected_activity,
                     selected_minutes
@@ -557,23 +569,23 @@ try:
 
                 print(
                     "Tiempo guardado:",
-                    selected_activity["name"],
+                    selected_activity[
+                        "name"
+                    ],
                     selected_minutes,
                     "min"
                 )
 
 
-                # -----------------------------------------
-                # Mostrar confirmación
-                # -----------------------------------------
+                # =========================================
+                # PANTALLA CONFIRMACIÓN
+                # =========================================
 
                 show_saved_screen(
                     image
                 )
 
 
-                # La mostramos inmediatamente.
-                # No esperamos al próximo ciclo del loop.
                 epd.displayPartial_Wait(
                     epd.getbuffer(
                         image
@@ -584,33 +596,14 @@ try:
                 refresh_count += 1
 
 
-                # Mostrar confirmación durante
-                # medio segundo.
                 time.sleep(
                     0.5
                 )
 
 
-                # -----------------------------------------
-                # Recalcular progreso
-                # -----------------------------------------
-
-                selected_progress = (
-                    get_activity_progress(
-                        selected_activity
-                    )
-                )
-
-
-                print(
-                    "Nuevo progreso:",
-                    selected_progress
-                )
-
-
-                # -----------------------------------------
-                # Volver a la lista de actividades
-                # -----------------------------------------
+                # =========================================
+                # VOLVER A LISTA
+                # =========================================
 
                 current_screen = (
                     PAGE_ACTIVITY_LIST
@@ -714,7 +707,7 @@ except IOError as error:
 
 
 # =========================================================
-# CUALQUIER OTRO ERROR
+# ERROR GENERAL
 # =========================================================
 
 except Exception as error:
@@ -754,7 +747,9 @@ except Exception as error:
         pass
 
 
-    sys.exit(1)
+    sys.exit(
+        1
+    )
 
 
 # =========================================================

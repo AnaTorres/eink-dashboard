@@ -493,18 +493,29 @@ def show_activities(
 
 
     # Siguiente
+# Siguiente página
     draw_button(
         draw,
-        BUTTON_PLUS,
+        (
+            94,
+            65,
+            124,
+            105
+        ),
         "▶",
         font15
     )
 
 
-    # Anterior
+    # Página anterior
     draw_button(
         draw,
-        BUTTON_MINUS,
+        (
+            94,
+            145,
+            124,
+            185
+        ),
         "◀",
         font15
     )

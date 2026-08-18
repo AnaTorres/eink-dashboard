@@ -4,15 +4,27 @@ from config import (
 
 
 # =========================================================
-# COORDENADAS BOTONES
-# =========================================================
-#
-# Deben coincidir con display.py
-#
+# COORDENADAS GENERALES
 # =========================================================
 
 BUTTON_X1 = 94
 BUTTON_X2 = 124
+
+
+# =========================================================
+# BOTONES PANTALLA PRINCIPAL
+# =========================================================
+
+MAIN_NEXT_Y1 = 65
+MAIN_NEXT_Y2 = 105
+
+MAIN_PREVIOUS_Y1 = 145
+MAIN_PREVIOUS_Y2 = 185
+
+
+# =========================================================
+# BOTONES PANTALLA DURACIÓN
+# =========================================================
 
 PLUS_Y1 = 10
 PLUS_Y2 = 50
@@ -46,23 +58,65 @@ def is_inside(
 
     return (
         x >= x1
-        and
-        x <= x2
-        and
-        y >= y1
-        and
-        y <= y2
+        and x <= x2
+        and y >= y1
+        and y <= y2
     )
 
 
 # =========================================================
-# BOTÓN +
+# PANTALLA PRINCIPAL
+# =========================================================
+
+def is_activity_next_button(
+    x,
+    y
+):
+    """
+    Botón para avanzar de página
+    en la lista de actividades.
+    """
+
+    return is_inside(
+        x,
+        y,
+        BUTTON_X1,
+        MAIN_NEXT_Y1,
+        BUTTON_X2,
+        MAIN_NEXT_Y2
+    )
+
+
+def is_activity_previous_button(
+    x,
+    y
+):
+    """
+    Botón para retroceder de página
+    en la lista de actividades.
+    """
+
+    return is_inside(
+        x,
+        y,
+        BUTTON_X1,
+        MAIN_PREVIOUS_Y1,
+        BUTTON_X2,
+        MAIN_PREVIOUS_Y2
+    )
+
+
+# =========================================================
+# PANTALLA DURACIÓN
 # =========================================================
 
 def is_next_button(
     x,
     y
 ):
+    """
+    Botón + minutos.
+    """
 
     return is_inside(
         x,
@@ -74,14 +128,13 @@ def is_next_button(
     )
 
 
-# =========================================================
-# BOTÓN GUARDAR
-# =========================================================
-
 def is_save_button(
     x,
     y
 ):
+    """
+    Botón guardar.
+    """
 
     return is_inside(
         x,
@@ -93,14 +146,13 @@ def is_save_button(
     )
 
 
-# =========================================================
-# BOTÓN -
-# =========================================================
-
 def is_previous_button(
     x,
     y
 ):
+    """
+    Botón - minutos.
+    """
 
     return is_inside(
         x,
@@ -112,14 +164,13 @@ def is_previous_button(
     )
 
 
-# =========================================================
-# BOTÓN VOLVER
-# =========================================================
-
 def is_bottom_button(
     x,
     y
 ):
+    """
+    Botón volver.
+    """
 
     return is_inside(
         x,
@@ -139,18 +190,12 @@ def is_activity_area(
     x,
     y
 ):
-    """
-    Zona donde aparecen las actividades.
-    """
 
     return (
         x >= 2
-        and
-        x <= 90
-        and
-        y >= 2
-        and
-        y <= 242
+        and x <= 90
+        and y >= 2
+        and y <= 242
     )
 
 
@@ -172,7 +217,6 @@ def get_selected_activity(
         return None
 
 
-    # Cada actividad ocupa aproximadamente 60 px
     position = (
         y
         // 60
