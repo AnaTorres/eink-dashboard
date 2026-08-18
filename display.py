@@ -385,7 +385,7 @@ def show_duration_screen(
 
     # Título
     draw.text(
-        (5, 105),
+        (5, 110),
         "Mes",
         font=font15,
         fill=0
@@ -403,7 +403,7 @@ def show_duration_screen(
     percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (85 - percentage_width, 105),
+        (85 - percentage_width, 110),
         percentage_text,
         font=font15,
         fill=0
@@ -413,7 +413,7 @@ def show_duration_screen(
     month_text = f"{month_minutes}/{monthly_goal}"
 
     draw.text(
-        (5, 125),
+        (5, 130),
         month_text,
         font=font15,
         fill=0
@@ -423,7 +423,7 @@ def show_duration_screen(
     draw_progress_bar(
         draw,
         5,
-        148,
+        153,
         80,
         8,
         month_percentage
