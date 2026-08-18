@@ -533,3 +533,33 @@ def show_duration_screen(
         font=font15,
         fill=0
     )
+
+def show_saved_screen(image):
+
+    draw = ImageDraw.Draw(
+        image
+    )
+
+    # Limpiar pantalla
+    draw.rectangle(
+        (
+            0,
+            0,
+            SCREEN_WIDTH - 1,
+            SCREEN_HEIGHT - 1
+        ),
+        fill=255
+    )
+
+    # Mensaje centrado
+    draw_centered_text(
+        draw,
+        (
+            5,
+            80,
+            120,
+            170
+        ),
+        "Tiempo guardado",
+        font24
+    )

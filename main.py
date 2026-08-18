@@ -50,7 +50,8 @@ from storage import (
 from display import (
     create_blank_image,
     show_activities,
-    show_duration_screen
+    show_duration_screen,
+    show_saved_screen
 )
 
 from touch import (
@@ -536,6 +537,18 @@ try:
                     selected_activity,
                     selected_minutes
                 )
+
+                show_saved_screen(
+                    image
+                )
+
+                epd.displayPartial_Wait(
+                    epd.getbuffer(
+                        image
+                    )
+                )
+
+                time.sleep(2)
 
 
                 # -----------------------------------------
