@@ -347,9 +347,9 @@ def show_duration_screen(
         draw,
         (
             3,
-            5,
+            7,
             90,
-            35
+            37
         ),
         str(
             activity["name"]
