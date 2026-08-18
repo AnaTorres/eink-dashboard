@@ -375,61 +375,6 @@ def show_duration_screen(
     )
 
 
-     # =====================================================
-    # PROGRESO ANUAL
-    # =====================================================
-
-    year_minutes = progress["year_minutes"]
-    annual_goal = progress["annual_goal"]
-    year_percentage = progress["year_percentage"]
-
-    # Título
-    draw.text(
-        (5, 105),
-        "Año",
-        font=font15,
-        fill=0
-    )
-
-    # Porcentaje a la derecha
-    percentage_text = f"{year_percentage}%"
-
-    bbox = draw.textbbox(
-        (0, 0),
-        percentage_text,
-        font=font15
-    )
-
-    percentage_width = bbox[2] - bbox[0]
-
-    draw.text(
-        (85 - percentage_width, 105),
-        percentage_text,
-        font=font15,
-        fill=0
-    )
-
-    # Minutos realizados / meta
-    year_text = f"{year_minutes}/{annual_goal}"
-
-    draw.text(
-        (5, 125),
-        year_text,
-        font=font15,
-        fill=0
-    )
-
-    # Barra anual
-    draw_progress_bar(
-        draw,
-        5,
-        148,
-        80,
-        8,
-        year_percentage
-    )
-
-
     # =====================================================
     # PROGRESO MENSUAL
     # =====================================================
@@ -440,7 +385,7 @@ def show_duration_screen(
 
     # Título
     draw.text(
-        (5, 180),
+        (5, 105),
         "Mes",
         font=font15,
         fill=0
@@ -458,7 +403,7 @@ def show_duration_screen(
     percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (85 - percentage_width, 180),
+        (85 - percentage_width, 105),
         percentage_text,
         font=font15,
         fill=0
@@ -468,7 +413,7 @@ def show_duration_screen(
     month_text = f"{month_minutes}/{monthly_goal}"
 
     draw.text(
-        (5, 200),
+        (5, 125),
         month_text,
         font=font15,
         fill=0
@@ -478,12 +423,65 @@ def show_duration_screen(
     draw_progress_bar(
         draw,
         5,
-        220,
+        148,
         80,
         8,
         month_percentage
     )
 
+     # =====================================================
+    # PROGRESO ANUAL
+    # =====================================================
+
+    year_minutes = progress["year_minutes"]
+    annual_goal = progress["annual_goal"]
+    year_percentage = progress["year_percentage"]
+
+    # Título
+    draw.text(
+        (5, 180),
+        "Año",
+        font=font15,
+        fill=0
+    )
+
+    # Porcentaje a la derecha
+    percentage_text = f"{year_percentage}%"
+
+    bbox = draw.textbbox(
+        (0, 0),
+        percentage_text,
+        font=font15
+    )
+
+    percentage_width = bbox[2] - bbox[0]
+
+    draw.text(
+        (85 - percentage_width, 180),
+        percentage_text,
+        font=font15,
+        fill=0
+    )
+
+    # Minutos realizados / meta
+    year_text = f"{year_minutes}/{annual_goal}"
+
+    draw.text(
+        (5, 200),
+        year_text,
+        font=font15,
+        fill=0
+    )
+
+    # Barra anual
+    draw_progress_bar(
+        draw,
+        5,
+        220,
+        80,
+        8,
+        year_percentage
+    )
 
     # =====================================================
     # BOTONES
