@@ -366,9 +366,9 @@ def show_duration_screen(
         draw,
         (
             3,
-            38,
+            40,
             90,
-            72
+            74
         ),
         str(minutes) + " min",
         font24
