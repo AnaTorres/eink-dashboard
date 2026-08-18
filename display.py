@@ -375,68 +375,58 @@ def show_duration_screen(
     )
 
 
-    # =====================================================
+     # =====================================================
     # PROGRESO ANUAL
     # =====================================================
 
-    year_minutes = progress[
-        "year_minutes"
-    ]
+    year_minutes = progress["year_minutes"]
+    annual_goal = progress["annual_goal"]
+    year_percentage = progress["year_percentage"]
 
-    annual_goal = progress[
-        "annual_goal"
-    ]
-
-    year_percentage = progress[
-        "year_percentage"
-    ]
-
-
+    # Título
     draw.text(
-        (
-            5,
-            82
-        ),
+        (5, 88),
         "Año",
         font=font15,
         fill=0
     )
 
+    # Porcentaje a la derecha
+    percentage_text = f"{year_percentage}%"
 
-    year_text = (
-        f"{year_minutes}/{annual_goal}"
+    bbox = draw.textbbox(
+        (0, 0),
+        percentage_text,
+        font=font15
     )
 
+    percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (
-            40,
-            82
-        ),
+        (85 - percentage_width, 88),
+        percentage_text,
+        font=font15,
+        fill=0
+    )
+
+    # Minutos realizados / meta
+    year_text = f"{year_minutes}/{annual_goal}"
+
+    draw.text(
+        (5, 108),
         year_text,
         font=font15,
         fill=0
     )
 
-
+    # Barra anual
     draw_progress_bar(
         draw,
         5,
-        102,
+        128,
         80,
         8,
         year_percentage
-    )
-
-
-    draw.text(
-        (
-            5,
-            114
-        ),
-        f"{year_percentage}%",
-        font=font15,
-        fill=0
     )
 
 
@@ -444,64 +434,54 @@ def show_duration_screen(
     # PROGRESO MENSUAL
     # =====================================================
 
-    month_minutes = progress[
-        "month_minutes"
-    ]
+    month_minutes = progress["month_minutes"]
+    monthly_goal = progress["monthly_goal"]
+    month_percentage = progress["month_percentage"]
 
-    monthly_goal = progress[
-        "monthly_goal"
-    ]
-
-    month_percentage = progress[
-        "month_percentage"
-    ]
-
-
+    # Título
     draw.text(
-        (
-            5,
-            140
-        ),
+        (5, 158),
         "Mes",
         font=font15,
         fill=0
     )
 
+    # Porcentaje a la derecha
+    percentage_text = f"{month_percentage}%"
 
-    month_text = (
-        f"{month_minutes}/{monthly_goal}"
+    bbox = draw.textbbox(
+        (0, 0),
+        percentage_text,
+        font=font15
     )
 
+    percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (
-            40,
-            140
-        ),
+        (85 - percentage_width, 158),
+        percentage_text,
+        font=font15,
+        fill=0
+    )
+
+    # Minutos realizados / meta
+    month_text = f"{month_minutes}/{monthly_goal}"
+
+    draw.text(
+        (5, 178),
         month_text,
         font=font15,
         fill=0
     )
 
-
+    # Barra mensual
     draw_progress_bar(
         draw,
         5,
-        160,
+        198,
         80,
         8,
         month_percentage
-    )
-
-
-    draw.text(
-        (
-            5,
-            172
-        ),
-        f"{month_percentage}%",
-        font=font15,
-        fill=0
     )
 
 
