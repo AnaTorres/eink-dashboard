@@ -439,7 +439,7 @@ def show_duration_screen(
 
     # Título
     draw.text(
-        (5, 180),
+        (5, 185),
         "Año",
         font=font15,
         fill=0
@@ -457,7 +457,7 @@ def show_duration_screen(
     percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (85 - percentage_width, 180),
+        (85 - percentage_width, 185),
         percentage_text,
         font=font15,
         fill=0
@@ -467,7 +467,7 @@ def show_duration_screen(
     year_text = f"{year_minutes}/{annual_goal}"
 
     draw.text(
-        (5, 200),
+        (5, 205),
         year_text,
         font=font15,
         fill=0
@@ -477,7 +477,7 @@ def show_duration_screen(
     draw_progress_bar(
         draw,
         5,
-        220,
+        225,
         80,
         8,
         year_percentage
