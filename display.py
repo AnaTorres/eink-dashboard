@@ -12,6 +12,10 @@ from config import (
 )
 
 
+# =========================================================
+# FUENTES
+# =========================================================
+
 font15 = ImageFont.truetype(
     FONT_FILE,
     15
@@ -23,7 +27,12 @@ font24 = ImageFont.truetype(
 )
 
 
+# =========================================================
+# CREAR IMAGEN VACÍA
+# =========================================================
+
 def create_blank_image():
+
     return Image.new(
         "1",
         (
@@ -32,6 +41,11 @@ def create_blank_image():
         ),
         255
     )
+
+
+# =========================================================
+# BARRA DE PROGRESO
+# =========================================================
 
 def draw_progress_bar(
     draw,
@@ -85,6 +99,10 @@ def draw_progress_bar(
         )
 
 
+# =========================================================
+# TEXTO CENTRADO
+# =========================================================
+
 def draw_centered_text(
     draw,
     box,
@@ -102,26 +120,46 @@ def draw_centered_text(
 
     max_width = x2 - x1
 
-    # Medir el texto completo
+
+    # -----------------------------------------------------
+    # Medir texto completo
+    # -----------------------------------------------------
+
     bbox = draw.textbbox(
         (0, 0),
         text,
         font=font
     )
 
-    text_width = bbox[2] - bbox[0]
+    text_width = (
+        bbox[2]
+        - bbox[0]
+    )
 
-    # Si cabe, mostrar normalmente
+
+    # -----------------------------------------------------
+    # Si cabe en una sola línea
+    # -----------------------------------------------------
+
     if text_width <= max_width - 6:
 
-        text_height = bbox[3] - bbox[1]
+        text_height = (
+            bbox[3]
+            - bbox[1]
+        )
 
         x = x1 + (
-            max_width - text_width
+            max_width
+            - text_width
         ) // 2
 
         y = y1 + (
-            (y2 - y1 - text_height) // 2
+            (
+                y2
+                - y1
+                - text_height
+            )
+            // 2
         )
 
         draw.text(
@@ -142,7 +180,10 @@ def draw_centered_text(
 
     if len(words) >= 2:
 
-        middle = len(words) // 2
+        middle = (
+            len(words)
+            // 2
+        )
 
         line1 = " ".join(
             words[:middle]
@@ -158,7 +199,10 @@ def draw_centered_text(
         ]
 
     else:
-        lines = [text]
+
+        lines = [
+            text
+        ]
 
 
     # -----------------------------------------------------
@@ -173,7 +217,12 @@ def draw_centered_text(
     )
 
     y = y1 + (
-        (y2 - y1 - total_height) // 2
+        (
+            y2
+            - y1
+            - total_height
+        )
+        // 2
     )
 
 
@@ -195,7 +244,8 @@ def draw_centered_text(
         )
 
         x = x1 + (
-            max_width - width
+            max_width
+            - width
         ) // 2
 
         draw.text(
@@ -208,13 +258,46 @@ def draw_centered_text(
         y += line_height
 
 
+# =========================================================
+# BOTÓN
+# =========================================================
+
+def draw_button(
+    draw,
+    box,
+    text,
+    font
+):
+    """
+    Dibuja un botón rectangular con borde
+    y texto centrado.
+    """
+
+    draw.rectangle(
+        box,
+        outline=0,
+        fill=255
+    )
+
+    draw_centered_text(
+        draw,
+        box,
+        text,
+        font
+    )
+
+
+# =========================================================
+# PANTALLA DE ACTIVIDADES
+# =========================================================
+
 def show_activities(
     image,
     activities,
     page
 ):
     """
-    Muestra cuatro actividades horizontalmente.
+    Muestra cuatro actividades.
 
     La zona izquierda:
         x = 2 ... 90
@@ -226,7 +309,11 @@ def show_activities(
         image
     )
 
+
+    # -----------------------------------------------------
     # Limpiar pantalla
+    # -----------------------------------------------------
+
     draw.rectangle(
         (
             0,
@@ -237,12 +324,20 @@ def show_activities(
         fill=255
     )
 
+
     first_index = (
-        page * ITEMS_PER_PAGE
+        page
+        * ITEMS_PER_PAGE
     )
+
 
     # Alto aproximado de cada actividad
     item_height = 60
+
+
+    # -----------------------------------------------------
+    # Dibujar actividades
+    # -----------------------------------------------------
 
     for position in range(
         ITEMS_PER_PAGE
@@ -258,14 +353,19 @@ def show_activities(
         ):
             continue
 
-        activity = activities[index]
+
+        activity = (
+            activities[index]
+        )
 
         text = str(
             activity["name"]
         )
 
+
         y1 = (
-            position * item_height
+            position
+            * item_height
             + 2
         )
 
@@ -275,6 +375,7 @@ def show_activities(
             - 4
         )
 
+
         box = (
             2,
             y1,
@@ -282,13 +383,15 @@ def show_activities(
             y2
         )
 
-        # Rectángulo alrededor de la actividad
+
+        # Rectángulo alrededor de actividad
         draw.rectangle(
             box,
             outline=0
         )
 
-        # Texto horizontal
+
+        # Texto centrado
         draw_centered_text(
             draw,
             box,
@@ -296,25 +399,36 @@ def show_activities(
             font15
         )
 
-    # ---------------------------------------------
+
+    # -----------------------------------------------------
     # Botones laterales
-    # ---------------------------------------------
+    # -----------------------------------------------------
 
     draw.text(
-        (100, 60),
+        (
+            100,
+            60
+        ),
         "▶",
         font=font15,
         fill=0
     )
 
+
     draw.text(
-        (100, 170),
+        (
+            100,
+            170
+        ),
         "◀",
         font=font15,
         fill=0
     )
 
 
+# =========================================================
+# PANTALLA DE DURACIÓN
+# =========================================================
 
 def show_duration_screen(
     image,
@@ -327,7 +441,11 @@ def show_duration_screen(
         image
     )
 
+
+    # -----------------------------------------------------
     # Limpiar pantalla
+    # -----------------------------------------------------
+
     draw.rectangle(
         (
             0,
@@ -379,20 +497,41 @@ def show_duration_screen(
     # PROGRESO MENSUAL
     # =====================================================
 
-    month_minutes = progress["month_minutes"]
-    monthly_goal = progress["monthly_goal"]
-    month_percentage = progress["month_percentage"]
+    month_minutes = (
+        progress["month_minutes"]
+    )
 
-    # Título
+    monthly_goal = (
+        progress["monthly_goal"]
+    )
+
+    month_percentage = (
+        progress["month_percentage"]
+    )
+
+
+    # -----------------------------------------------------
+    # Título Mes
+    # -----------------------------------------------------
+
     draw.text(
-        (5, 110),
+        (
+            5,
+            110
+        ),
         "Mes",
         font=font15,
         fill=0
     )
 
-    # Porcentaje a la derecha
-    percentage_text = f"{month_percentage}%"
+
+    # -----------------------------------------------------
+    # Porcentaje mensual
+    # -----------------------------------------------------
+
+    percentage_text = (
+        f"{month_percentage}%"
+    )
 
     bbox = draw.textbbox(
         (0, 0),
@@ -400,26 +539,46 @@ def show_duration_screen(
         font=font15
     )
 
-    percentage_width = bbox[2] - bbox[0]
+    percentage_width = (
+        bbox[2]
+        - bbox[0]
+    )
 
     draw.text(
-        (85 - percentage_width, 110),
+        (
+            85
+            - percentage_width,
+            110
+        ),
         percentage_text,
         font=font15,
         fill=0
     )
 
-    # Minutos realizados / meta
-    month_text = f"{month_minutes}/{monthly_goal}"
+
+    # -----------------------------------------------------
+    # Minutos / meta mensual
+    # -----------------------------------------------------
+
+    month_text = (
+        f"{month_minutes}/{monthly_goal}"
+    )
 
     draw.text(
-        (5, 130),
+        (
+            5,
+            130
+        ),
         month_text,
         font=font15,
         fill=0
     )
 
+
+    # -----------------------------------------------------
     # Barra mensual
+    # -----------------------------------------------------
+
     draw_progress_bar(
         draw,
         5,
@@ -429,24 +588,46 @@ def show_duration_screen(
         month_percentage
     )
 
-     # =====================================================
+
+    # =====================================================
     # PROGRESO ANUAL
     # =====================================================
 
-    year_minutes = progress["year_minutes"]
-    annual_goal = progress["annual_goal"]
-    year_percentage = progress["year_percentage"]
+    year_minutes = (
+        progress["year_minutes"]
+    )
 
-    # Título
+    annual_goal = (
+        progress["annual_goal"]
+    )
+
+    year_percentage = (
+        progress["year_percentage"]
+    )
+
+
+    # -----------------------------------------------------
+    # Título Año
+    # -----------------------------------------------------
+
     draw.text(
-        (5, 190),
+        (
+            5,
+            190
+        ),
         "Año",
         font=font15,
         fill=0
     )
 
-    # Porcentaje a la derecha
-    percentage_text = f"{year_percentage}%"
+
+    # -----------------------------------------------------
+    # Porcentaje anual
+    # -----------------------------------------------------
+
+    percentage_text = (
+        f"{year_percentage}%"
+    )
 
     bbox = draw.textbbox(
         (0, 0),
@@ -454,26 +635,46 @@ def show_duration_screen(
         font=font15
     )
 
-    percentage_width = bbox[2] - bbox[0]
+    percentage_width = (
+        bbox[2]
+        - bbox[0]
+    )
 
     draw.text(
-        (85 - percentage_width, 190),
+        (
+            85
+            - percentage_width,
+            190
+        ),
         percentage_text,
         font=font15,
         fill=0
     )
 
-    # Minutos realizados / meta
-    year_text = f"{year_minutes}/{annual_goal}"
+
+    # -----------------------------------------------------
+    # Minutos / meta anual
+    # -----------------------------------------------------
+
+    year_text = (
+        f"{year_minutes}/{annual_goal}"
+    )
 
     draw.text(
-        (5, 210),
+        (
+            5,
+            210
+        ),
         year_text,
         font=font15,
         fill=0
     )
 
+
+    # -----------------------------------------------------
     # Barra anual
+    # -----------------------------------------------------
+
     draw_progress_bar(
         draw,
         5,
@@ -483,64 +684,96 @@ def show_duration_screen(
         year_percentage
     )
 
+
     # =====================================================
     # BOTONES
     # =====================================================
 
+    # -----------------------------------------------------
     # + minutos
-    draw.text(
+    # -----------------------------------------------------
+
+    draw_button(
+        draw,
         (
-            100,
-            60
+            96,
+            42,
+            122,
+            82
         ),
         "+",
-        font=font24,
-        fill=0
+        font24
     )
 
 
+    # -----------------------------------------------------
     # Guardar
-    draw.text(
+    # -----------------------------------------------------
+
+    draw_button(
+        draw,
         (
-            100,
-            115
+            96,
+            98,
+            122,
+            138
         ),
-        "S",
-        font=font15,
-        fill=0
+        "OK",
+        font15
     )
 
 
+    # -----------------------------------------------------
     # - minutos
-    draw.text(
+    # -----------------------------------------------------
+
+    draw_button(
+        draw,
         (
-            100,
-            170
+            96,
+            154,
+            122,
+            194
         ),
         "-",
-        font=font24,
-        fill=0
+        font24
     )
 
 
+    # -----------------------------------------------------
     # Volver
-    draw.text(
+    # -----------------------------------------------------
+
+    draw_button(
+        draw,
         (
-            100,
-            220
+            96,
+            210,
+            122,
+            248
         ),
-        "B",
-        font=font15,
-        fill=0
+        "<",
+        font24
     )
 
-def show_saved_screen(image):
+
+# =========================================================
+# PANTALLA TIEMPO GUARDADO
+# =========================================================
+
+def show_saved_screen(
+    image
+):
 
     draw = ImageDraw.Draw(
         image
     )
 
+
+    # -----------------------------------------------------
     # Limpiar pantalla
+    # -----------------------------------------------------
+
     draw.rectangle(
         (
             0,
@@ -551,14 +784,18 @@ def show_saved_screen(image):
         fill=255
     )
 
-    # Mensaje centrado
+
+    # -----------------------------------------------------
+    # Mensaje
+    # -----------------------------------------------------
+
     draw_centered_text(
         draw,
         (
             5,
-            80,
-            120,
-            170
+            75,
+            SCREEN_WIDTH - 5,
+            175
         ),
         "Tiempo guardado",
         font24
