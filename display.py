@@ -385,7 +385,7 @@ def show_duration_screen(
 
     # Título
     draw.text(
-        (5, 88),
+        (5, 105),
         "Año",
         font=font15,
         fill=0
@@ -403,7 +403,7 @@ def show_duration_screen(
     percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (85 - percentage_width, 88),
+        (85 - percentage_width, 105),
         percentage_text,
         font=font15,
         fill=0
@@ -413,7 +413,7 @@ def show_duration_screen(
     year_text = f"{year_minutes}/{annual_goal}"
 
     draw.text(
-        (5, 108),
+        (5, 125),
         year_text,
         font=font15,
         fill=0
@@ -423,7 +423,7 @@ def show_duration_screen(
     draw_progress_bar(
         draw,
         5,
-        128,
+        148,
         80,
         8,
         year_percentage
@@ -440,7 +440,7 @@ def show_duration_screen(
 
     # Título
     draw.text(
-        (5, 158),
+        (5, 175),
         "Mes",
         font=font15,
         fill=0
@@ -458,7 +458,7 @@ def show_duration_screen(
     percentage_width = bbox[2] - bbox[0]
 
     draw.text(
-        (85 - percentage_width, 158),
+        (85 - percentage_width, 175),
         percentage_text,
         font=font15,
         fill=0
@@ -468,7 +468,7 @@ def show_duration_screen(
     month_text = f"{month_minutes}/{monthly_goal}"
 
     draw.text(
-        (5, 178),
+        (5, 195),
         month_text,
         font=font15,
         fill=0
@@ -478,7 +478,7 @@ def show_duration_screen(
     draw_progress_bar(
         draw,
         5,
-        198,
+        215,
         80,
         8,
         month_percentage
